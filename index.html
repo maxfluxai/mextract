@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MEXTRACT | TITANIUM</title>
+    <title>MEXTRACT</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
@@ -11,20 +11,19 @@
     <style>
         /* 
         ================================================================
-        // 0. KERNEL CONFIGURATION & VARIABLES
+        // CORE CONFIGURATION
         ================================================================
         */
         :root {
-            --bg-depth: #050505;
-            --bg-panel: #0a0a0a;
+            --bg-core: #000000;
+            --panel-bg: rgba(10, 10, 10, 0.85);
             --fg-primary: #ffffff;
-            --fg-dim: #444444;
-            --fg-accent: #ffffff; /* Monochrome aesthetic */
-            --border-width: 1px;
-            --font-disp: 'Orbitron', sans-serif;
+            --fg-dim: #666666;
+            --accent: #ffffff;
+            --border: 1px solid #333;
+            --font-head: 'Orbitron', sans-serif;
             --font-ui: 'Rajdhani', sans-serif;
             --font-code: 'JetBrains Mono', monospace;
-            --ease-out: cubic-bezier(0.19, 1, 0.22, 1);
         }
 
         * {
@@ -36,7 +35,7 @@
         }
 
         body {
-            background-color: var(--bg-depth);
+            background-color: var(--bg-core);
             color: var(--fg-primary);
             font-family: var(--font-ui);
             height: 100vh;
@@ -46,16 +45,16 @@
             flex-direction: column;
         }
 
-        /* --- BACKGROUND LAYERS --- */
+        /* --- RAIN BACKGROUND (GLOBAL) --- */
         #rain-canvas {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
             pointer-events: none;
-            opacity: 0.2; /* Low opacity as requested */
         }
 
+        /* --- SCANLINES --- */
         .scanline-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -64,14 +63,14 @@
                 0deg,
                 transparent,
                 transparent 2px,
-                rgba(0, 0, 0, 0.3) 3px
+                rgba(0, 0, 0, 0.2) 3px
             );
             z-index: 1;
             pointer-events: none;
         }
 
-        /* --- LOADING SCREEN (INTERACTIVE) --- */
-        #sys-loader {
+        /* --- LOADING SCREEN (1.5s) --- */
+        #loader {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
@@ -81,37 +80,34 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: transform 0.8s var(--ease-out);
+            transition: opacity 0.5s ease, visibility 0.5s;
         }
         
-        .loader-btn {
-            border: 2px solid #fff;
-            padding: 20px 40px;
-            background: transparent;
-            color: #fff;
-            font-family: var(--font-disp);
-            font-size: 1.2rem;
-            font-weight: 900;
-            cursor: pointer;
-            transition: 0.3s;
-            letter-spacing: 2px;
+        .loader-bar-wrap {
+            width: 200px;
+            height: 2px;
+            background: #333;
+            margin-top: 20px;
             position: relative;
             overflow: hidden;
         }
-        .loader-btn:hover {
+        .loader-bar {
+            width: 0%;
+            height: 100%;
             background: #fff;
-            color: #000;
-            box-shadow: 0 0 30px rgba(255,255,255,0.5);
+            position: absolute;
+            top: 0; left: 0;
+            /* CHANGED: Duration 1.5s */
+            animation: loadAnim 1.5s linear forwards;
         }
         .loader-text {
-            margin-top: 20px;
-            font-family: var(--font-code);
-            font-size: 0.8rem;
-            color: #666;
+            font-family: var(--font-head);
+            letter-spacing: 4px;
+            animation: pulse 0.2s infinite; /* Faster pulse for hype */
         }
 
-        /* --- MAIN APP SHELL (RESPONSIVE) --- */
-        #app-shell {
+        /* --- MAIN APP LAYOUT --- */
+        #app-interface {
             position: relative;
             z-index: 10;
             height: 100%;
@@ -123,105 +119,102 @@
             margin: 0 auto;
             width: 100%;
         }
-        #app-shell.active { opacity: 1; }
+        #app-interface.active { opacity: 1; }
 
         /* HEADER */
         header {
-            height: 80px;
-            border-bottom: 1px solid var(--fg-dim);
+            height: 70px;
+            border-bottom: var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
-            background: rgba(5,5,5,0.9);
+            background: var(--panel-bg);
+            backdrop-filter: blur(5px);
         }
         
-        /* LOGO CANVAS CONTAINER */
-        #logo-wrapper {
-            width: 220px;
-            height: 50px;
-            position: relative;
+        #logo-container {
+            width: 250px; /* Slightly wider for animation space */
+            height: 60px;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* WORKSPACE (Middle Area) */
+        /* WORKSPACE (Split View) */
         .workspace {
             flex: 1;
             display: flex;
             overflow: hidden;
-            position: relative;
         }
 
-        /* LEFT PANEL (VIDEO) - GROWS */
-        .panel-main {
+        /* LEFT: VIDEO AREA */
+        .panel-video {
             flex: 1;
             display: flex;
             flex-direction: column;
+            border-right: var(--border);
             position: relative;
-            border-right: 1px solid var(--fg-dim);
+            background: rgba(0,0,0,0.3);
         }
 
-        /* RIGHT PANEL (CONTROLS/STATS) - FIXED WIDTH ON DESKTOP */
-        .panel-side {
-            width: 350px;
-            background: rgba(10,10,10,0.8);
-            backdrop-filter: blur(5px);
+        /* RIGHT: CONTROLS */
+        .panel-controls {
+            width: 360px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
             display: flex;
             flex-direction: column;
             padding: 20px;
+            gap: 25px;
             overflow-y: auto;
         }
 
-        /* UPLOAD WIDGET */
-        .upload-box {
+        /* UPLOAD COMPONENT */
+        .upload-zone {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border: 1px dashed var(--fg-dim);
+            border: 1px dashed #333;
             margin: 20px;
             transition: 0.3s;
             cursor: pointer;
-            position: relative;
         }
-        .upload-box:hover {
+        .upload-zone:hover {
             border-color: #fff;
-            background: rgba(255,255,255,0.03);
+            background: rgba(255,255,255,0.05);
         }
-        .icon-add { font-size: 4rem; font-weight: 100; margin-bottom: 10px; }
+        .upload-icon { font-size: 4rem; font-weight: 100; margin-bottom: 10px; }
 
         /* VIDEO PLAYER */
-        .video-stage {
-            flex: 1;
-            display: none; /* Hidden until upload */
-            background: #000;
+        .video-wrapper {
+            display: none;
+            width: 100%;
+            height: 100%;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            background: #000;
             position: relative;
         }
         video {
             max-width: 100%;
             max-height: 100%;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            display: block;
         }
 
-        /* CONTROLS & BUTTONS */
-        .control-group {
-            margin-bottom: 30px;
-        }
-        .label-text {
-            font-family: var(--font-disp);
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 10px;
-            display: block;
+        /* CONTROL WIDGETS */
+        .widget { display: flex; flex-direction: column; gap: 8px; }
+        .widget-label {
+            font-family: var(--font-head);
+            font-size: 0.7rem;
+            color: var(--fg-dim);
             letter-spacing: 1px;
         }
-        
+
         /* SCRUBBER */
-        .scrub-rail {
+        .scrub-track {
             width: 100%; height: 30px;
             background: #111;
             border: 1px solid #333;
@@ -229,220 +222,166 @@
             cursor: crosshair;
         }
         .scrub-fill {
-            height: 100%; background: #fff; width: 0%;
-            position: absolute; top: 0; left: 0;
-            pointer-events: none;
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: #fff; pointer-events: none;
         }
-        .scrub-head {
-            width: 2px; height: 100%; background: #fff;
-            position: absolute; top: 0; left: 0;
-            box-shadow: 0 0 10px #fff;
-            pointer-events: none;
-            transform: translateX(-50%);
+        .scrub-thumb {
+            position: absolute; top: 0; left: 0; width: 2px; height: 100%;
+            background: #fff; box-shadow: 0 0 10px #fff;
+            pointer-events: none; transform: translateX(-50%);
         }
         input[type=range] {
-            position: absolute; top:0; left:0; width:100%; height:100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             opacity: 0; cursor: pointer;
         }
 
         /* BUTTONS */
-        .btn-row {
-            display: flex;
-            gap: 10px;
-        }
+        .btn-group { display: flex; gap: 10px; }
         .cyber-btn {
             flex: 1;
             background: transparent;
             border: 1px solid #444;
             color: #fff;
-            padding: 12px 0;
+            padding: 12px;
             font-family: var(--font-ui);
             font-weight: 700;
             text-transform: uppercase;
             cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
+            transition: 0.2s;
         }
-        .cyber-btn:hover {
-            border-color: #fff;
-            background: #fff;
-            color: #000;
-        }
-        .btn-extract {
-            border-color: #fff;
-            background: rgba(255,255,255,0.05);
-        }
+        .cyber-btn:hover { background: #fff; color: #000; }
+        
+        .btn-primary { border-color: #fff; background: rgba(255,255,255,0.05); }
+        .btn-primary:hover { box-shadow: 0 0 15px rgba(255,255,255,0.5); }
 
-        /* FOOTER (SOCIALS) */
+        /* FOOTER */
         footer {
             height: 50px;
-            border-top: 1px solid var(--fg-dim);
-            background: #000;
+            border-top: var(--border);
+            background: var(--panel-bg);
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 0 20px;
             font-size: 0.8rem;
-            color: #666;
+            color: var(--fg-dim);
         }
-        .social-links {
-            display: flex;
-            gap: 20px;
+        .socials { display: flex; gap: 20px; }
+        .social-link {
+            color: var(--fg-dim); text-decoration: none;
+            display: flex; align-items: center; gap: 8px; transition: 0.3s;
         }
-        .social-item {
-            color: #888;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.3s;
-        }
-        .social-item:hover { color: #fff; }
-        .social-icon { width: 16px; height: 16px; fill: currentColor; }
+        .social-link:hover { color: #fff; }
+        .icon { width: 16px; height: 16px; fill: currentColor; }
 
-        /* LOGS */
-        .log-box {
-            height: 150px;
-            overflow-y: auto;
-            font-family: var(--font-code);
-            font-size: 0.75rem;
-            color: #888;
-            border-top: 1px solid #222;
-            padding-top: 10px;
-        }
-        .log-entry { margin-bottom: 4px; }
-
-        /* 
-        ================================================================
-        // RESPONSIVE BREAKPOINTS (THE FIX)
-        ================================================================
-        */
+        /* RESPONSIVE LAYOUT */
         @media (max-width: 900px) {
-            .workspace {
-                flex-direction: column; /* Stack vertically on mobile */
-            }
-            .panel-main {
-                height: 50vh; /* Video takes top half */
-                border-right: none;
-                border-bottom: 1px solid var(--fg-dim);
-            }
-            .panel-side {
-                width: 100%; /* Controls take full width bottom half */
-                height: 50vh;
-                padding: 15px;
-            }
-            .upload-box {
-                margin: 10px;
-            }
-            .icon-add { font-size: 2rem; }
-            .upload-text { font-size: 0.8rem; }
-            
-            /* Hide logs on very small screens to save space */
-            .log-box { display: none; } 
-            
-            /* Bigger touch targets */
-            .cyber-btn { padding: 15px 0; font-size: 1rem; }
-            .scrub-rail { height: 40px; }
+            .workspace { flex-direction: column; }
+            .panel-video { height: 50vh; border-right: none; border-bottom: var(--border); }
+            .panel-controls { width: 100%; height: 50vh; padding: 15px; }
+            .upload-icon { font-size: 2.5rem; }
+            .cyber-btn { padding: 14px; font-size: 0.9rem; }
         }
 
-        /* HIDDEN CANVAS */
+        /* ANIMATIONS */
+        @keyframes loadAnim { 0% { width: 0%; } 100% { width: 100%; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .hidden { display: none !important; }
 
     </style>
 </head>
 <body>
 
-    <!-- 1. BACKGROUND SYSTEM -->
+    <!-- RAIN LAYER -->
     <canvas id="rain-canvas"></canvas>
     <div class="scanline-overlay"></div>
 
-    <!-- 2. LOADING SCREEN -->
-    <div id="sys-loader">
-        <button class="loader-btn" id="init-btn">INITIALIZE SYSTEM</button>
-        <div class="loader-text">MExtract_Protocol_v4 // waiting for user_input</div>
+    <!-- LOADING SCREEN -->
+    <div id="loader">
+        <div class="loader-text">MEXTRACT</div>
+        <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+        <div style="margin-top: 10px; font-family: var(--font-code); font-size: 0.7rem; color: #666;">
+            INITIALIZING CORE...
+        </div>
     </div>
 
-    <!-- 3. APP SHELL -->
-    <div id="app-shell">
+    <!-- MAIN APP -->
+    <div id="app-interface">
         
-        <!-- HEADER -->
         <header>
-            <!-- Interactive Particle Logo -->
-            <div id="logo-wrapper">
+            <div id="logo-container">
                 <canvas id="logo-canvas"></canvas>
             </div>
-            <div style="text-align: right;">
-                <div style="font-family: var(--font-code); font-size: 0.9rem;" id="clock">00:00</div>
-                <div style="font-size: 0.6rem; opacity: 0.5; letter-spacing: 1px;">SYSTEM ONLINE</div>
+            <div style="font-family: var(--font-code); font-size: 0.8rem; opacity: 0.7;" id="clock">
+                00:00:00
             </div>
         </header>
 
-        <!-- MAIN WORKSPACE -->
         <div class="workspace">
             
-            <!-- VIDEO PANEL -->
-            <div class="panel-main">
-                <label class="upload-box" id="upload-trigger">
-                    <div class="icon-add">+</div>
-                    <div class="upload-text">UPLOAD VIDEO SOURCE</div>
-                    <div style="font-family:var(--font-code); font-size:0.6rem; margin-top:5px; opacity:0.5;">MP4 / MOV / WEBM</div>
+            <!-- LEFT PANEL -->
+            <div class="panel-video">
+                <label class="upload-zone" id="upload-trigger">
+                    <div class="upload-icon">+</div>
+                    <div style="letter-spacing: 2px;">UPLOAD VIDEO</div>
+                    <div style="font-family: var(--font-code); font-size: 0.7rem; opacity: 0.5; margin-top: 5px;">MP4 . MOV . WEBM</div>
                     <input type="file" id="file-input" accept="video/*" hidden>
                 </label>
 
-                <div class="video-stage" id="video-stage">
+                <div class="video-wrapper" id="video-wrapper">
                     <video id="main-video" playsinline muted></video>
                 </div>
             </div>
 
-            <!-- CONTROLS PANEL -->
-            <div class="panel-side">
+            <!-- RIGHT PANEL -->
+            <div class="panel-controls">
                 
-                <div class="control-group">
-                    <span class="label-text">TIMELINE SCRUBBER</span>
-                    <div class="scrub-rail">
+                <div class="widget">
+                    <div class="widget-label">TIMELINE</div>
+                    <div class="scrub-track">
                         <div class="scrub-fill" id="scrub-fill"></div>
-                        <div class="scrub-head" id="scrub-head"></div>
-                        <input type="range" id="seek-slider" min="0" value="0" step="0.001">
+                        <div class="scrub-thumb" id="scrub-head"></div>
+                        <input type="range" id="seek-bar" min="0" value="0" step="0.001">
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-top:5px; font-family:var(--font-code); font-size:0.7rem;">
-                        <span id="time-curr">00.00s</span>
-                        <span id="time-dur">00.00s</span>
+                    <div style="display:flex; justify-content:space-between; font-family: var(--font-code); font-size: 0.7rem;">
+                        <span id="t-curr">00.00s</span>
+                        <span id="t-dur">00.00s</span>
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <span class="label-text">PLAYBACK CONTROL</span>
-                    <div class="btn-row">
-                        <button class="cyber-btn" id="btn-prev">&lt;&lt; FRAME</button>
+                <div class="widget">
+                    <div class="widget-label">NAVIGATION</div>
+                    <div class="btn-group">
+                        <button class="cyber-btn" id="btn-back">&lt; FRAME</button>
                         <button class="cyber-btn" id="btn-play">PLAY</button>
-                        <button class="cyber-btn" id="btn-next">FRAME &gt;&gt;</button>
+                        <button class="cyber-btn" id="btn-fwd">FRAME &gt;</button>
                     </div>
                 </div>
 
-                <div class="control-group" style="margin-top: auto;">
-                    <button class="cyber-btn btn-extract" id="btn-extract">
-                        EXTRACT FRAME [LOSSLESS]
-                    </button>
-                </div>
+                <div style="flex: 1;"></div>
 
-                <div class="log-box" id="sys-logs">
-                    <div class="log-entry">> KERNEL READY.</div>
+                <div class="widget">
+                    <div class="widget-label">EXTRACTION PROTOCOLS</div>
+                    <button class="cyber-btn btn-primary" id="btn-png">
+                        EXTRACT PNG (LOSSLESS)
+                    </button>
+                    <button class="cyber-btn btn-primary" id="btn-jpg" style="margin-top: 10px; border-color: #666; opacity: 0.8;">
+                        EXTRACT JPG (COMPRESSED)
+                    </button>
                 </div>
 
             </div>
         </div>
 
-        <!-- FOOTER -->
         <footer>
-            <div>MEXTRACT V4.0 // DESIGNED BY MAXFLUX</div>
-            <div class="social-links">
-                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="social-item">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <div>POWERED BY MAXFLUX AI</div>
+            <div class="socials">
+                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="social-link">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                     @maxfluxai
                 </a>
-                <a href="https://www.x.com/maxfluxai" target="_blank" class="social-item">
-                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                <a href="https://www.x.com/maxfluxai" target="_blank" class="social-link">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                     @maxfluxai
                 </a>
             </div>
@@ -450,169 +389,44 @@
 
     </div>
 
-    <!-- HIDDEN PROCESSING CANVAS -->
+    <!-- OFFSCREEN CANVAS -->
     <canvas id="proc-canvas" class="hidden"></canvas>
 
     <script>
         /* 
         ================================================================
-        // SYSTEM CORE LOGIC
+        // SYSTEM KERNEL
         ================================================================
         */
 
-        // --- 1. AUDIO ENGINE (SYNTHESIS) ---
+        // --- AUDIO SYSTEM ---
         const AudioSys = {
             ctx: null,
+            ready: false,
             init: function() {
+                if(this.ready) return;
                 window.AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new AudioContext();
+                this.ready = true;
             },
-            playClick: function() {
-                if(!this.ctx) return;
+            tone: function(freq, type, dur) {
+                if(!this.ready) { this.init(); return; }
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-                
-                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.15);
+                osc.stop(this.ctx.currentTime + dur);
             },
-            playConfirm: function() {
-                if(!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(400, this.ctx.currentTime + 0.1);
-                
-                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
-                
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.2);
-            }
+            click: function() { this.tone(1000, 'sine', 0.1); },
+            success: function() { this.tone(600, 'square', 0.1); setTimeout(()=>this.tone(1200,'sine',0.2), 100); }
         };
 
-        // --- 2. LOGO PARTICLE SYSTEM ---
-        const LogoSys = {
-            canvas: document.getElementById('logo-canvas'),
-            ctx: null,
-            particles: [],
-            textPrimary: "MEXTRACT",
-            textSecondary: "MAXFLUXAI",
-            isAlt: false,
-            
-            init: function() {
-                this.ctx = this.canvas.getContext('2d');
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-                
-                // Events
-                this.canvas.addEventListener('mouseenter', () => { this.scramble(); });
-                this.canvas.addEventListener('click', () => {
-                    this.isAlt = !this.isAlt;
-                    this.morph();
-                    AudioSys.playConfirm();
-                });
-
-                this.morph(); // Initial Render
-                this.animate();
-            },
-            
-            resize: function() {
-                const parent = this.canvas.parentElement;
-                this.canvas.width = parent.offsetWidth;
-                this.canvas.height = parent.offsetHeight;
-                this.morph(); // Re-calc positions
-            },
-
-            // Get pixel coordinates of text
-            getTextPoints: function(text) {
-                const temp = document.createElement('canvas');
-                temp.width = this.canvas.width; 
-                temp.height = this.canvas.height;
-                const tctx = temp.getContext('2d');
-                
-                tctx.font = '900 30px "Orbitron"';
-                tctx.fillStyle = '#fff';
-                tctx.textAlign = 'left';
-                tctx.textBaseline = 'middle';
-                tctx.fillText(text, 10, temp.height/2);
-                
-                const data = tctx.getImageData(0,0,temp.width,temp.height).data;
-                const points = [];
-                const step = 2; // Density
-                
-                for(let y=0; y<temp.height; y+=step) {
-                    for(let x=0; x<temp.width; x+=step) {
-                        if(data[(y*temp.width+x)*4+3] > 128) {
-                            points.push({x, y});
-                        }
-                    }
-                }
-                return points;
-            },
-
-            morph: function() {
-                const targetTxt = this.isAlt ? this.textSecondary : this.textPrimary;
-                const targets = this.getTextPoints(targetTxt);
-                
-                // Adjust particle count
-                if(this.particles.length < targets.length) {
-                    const add = targets.length - this.particles.length;
-                    for(let i=0; i<add; i++) this.particles.push({x:Math.random()*200, y:Math.random()*50, vx:0, vy:0});
-                } else {
-                    this.particles.splice(targets.length);
-                }
-                
-                // Assign targets
-                this.particles.forEach((p, i) => {
-                    p.tx = targets[i].x;
-                    p.ty = targets[i].y;
-                });
-            },
-
-            scramble: function() {
-                this.particles.forEach(p => {
-                    p.vx = (Math.random()-0.5) * 10;
-                    p.vy = (Math.random()-0.5) * 10;
-                });
-                AudioSys.playClick();
-            },
-
-            animate: function() {
-                this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
-                this.ctx.fillStyle = '#ffffff';
-                
-                this.particles.forEach(p => {
-                    const dx = p.tx - p.x;
-                    const dy = p.ty - p.y;
-                    
-                    p.vx += dx * 0.05;
-                    p.vy += dy * 0.05;
-                    p.vx *= 0.85; // Friction
-                    p.vy *= 0.85;
-                    
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    
-                    this.ctx.fillRect(p.x, p.y, 1.5, 1.5);
-                });
-                requestAnimationFrame(() => this.animate());
-            }
-        };
-
-        // --- 3. RAIN SYSTEM (OPTIMIZED) ---
+        // --- RAIN SYSTEM ---
         const RainSys = {
             canvas: document.getElementById('rain-canvas'),
             init: function() {
@@ -624,11 +438,9 @@
                     w = this.canvas.width = window.innerWidth;
                     h = this.canvas.height = window.innerHeight;
                     drops.length = 0;
-                    for(let i=0; i<100; i++) drops.push({
-                        x: Math.random()*w,
-                        y: Math.random()*h,
-                        l: Math.random()*10+5,
-                        s: Math.random()*5+5
+                    for(let i=0; i<120; i++) drops.push({
+                        x: Math.random()*w, y: Math.random()*h,
+                        l: Math.random()*15+5, s: Math.random()*10+5
                     });
                 };
                 window.addEventListener('resize', resize);
@@ -636,9 +448,7 @@
 
                 function loop() {
                     ctx.clearRect(0,0,w,h);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.globalAlpha = 0.3;
-                    
+                    ctx.fillStyle = 'rgba(255,255,255,0.15)'; // Subtle rain
                     drops.forEach(d => {
                         d.y += d.s;
                         if(d.y > h) { d.y = -20; d.x = Math.random()*w; }
@@ -650,145 +460,229 @@
             }
         };
 
-        // --- 4. APP LOGIC ---
-        const App = {
-            els: {
-                loader: document.getElementById('sys-loader'),
-                shell: document.getElementById('app-shell'),
-                upload: document.getElementById('upload-trigger'),
-                videoStage: document.getElementById('video-stage'),
-                video: document.getElementById('main-video'),
-                fileIn: document.getElementById('file-input'),
-                slider: document.getElementById('seek-slider'),
-                scrubHead: document.getElementById('scrub-head'),
-                scrubFill: document.getElementById('scrub-fill'),
-                logs: document.getElementById('sys-logs'),
-                clock: document.getElementById('clock'),
-                btnPlay: document.getElementById('btn-play')
+        // --- HYPER-STYLIZED LOGO SYSTEM ---
+        const LogoSys = {
+            c: document.getElementById('logo-canvas'),
+            ctx: null,
+            w: 0, h: 0,
+            particles: [],
+            targetText: "MEXTRACT",
+            state: "IDLE", // IDLE or MORPH
+            
+            init: function() {
+                this.ctx = this.c.getContext('2d');
+                this.resize();
+                
+                // Events for Interaction
+                this.c.addEventListener('mouseenter', () => { 
+                    this.morphTo("MAXFLUX"); 
+                    AudioSys.click(); 
+                });
+                this.c.addEventListener('mouseleave', () => { 
+                    this.morphTo("MEXTRACT"); 
+                });
+                
+                window.addEventListener('resize', () => this.resize());
+                this.animate();
             },
             
-            log: function(msg) {
-                const div = document.createElement('div');
-                div.className = 'log-entry';
-                div.innerText = `> ${msg}`;
-                this.els.logs.prepend(div);
+            resize: function() {
+                this.w = this.c.width = this.c.parentElement.offsetWidth;
+                this.h = this.c.height = this.c.parentElement.offsetHeight;
+                this.morphTo(this.targetText, true); // Reset
             },
 
-            init: function() {
-                RainSys.init();
-                LogoSys.init();
+            // Scan text to get particle coordinates
+            scan: function(text) {
+                const tmp = document.createElement('canvas');
+                tmp.width = this.w; tmp.height = this.h;
+                const tctx = tmp.getContext('2d');
+                tctx.font = '900 28px "Orbitron"';
+                tctx.fillStyle = '#fff';
+                tctx.textAlign = 'left';
+                tctx.textBaseline = 'middle';
+                tctx.fillText(text, 10, this.h/2);
                 
-                // Clock
-                setInterval(() => {
-                    const d = new Date();
-                    this.els.clock.innerText = d.toLocaleTimeString('en-GB');
-                }, 1000);
-
-                // Boot Button
-                document.getElementById('init-btn').addEventListener('click', () => {
-                    AudioSys.init();
-                    AudioSys.playConfirm();
-                    this.els.loader.style.transform = "translateY(-100%)";
-                    this.els.shell.classList.add('active');
-                });
-
-                // Upload Logic
-                this.els.upload.addEventListener('click', () => AudioSys.playClick());
-                this.els.fileIn.addEventListener('change', (e) => this.loadVideo(e.target.files[0]));
-                
-                // Controls
-                this.els.btnPlay.addEventListener('click', () => this.togglePlay());
-                
-                this.els.slider.addEventListener('input', (e) => {
-                    this.els.video.currentTime = e.target.value;
-                    this.updateUI();
-                });
-                this.els.slider.addEventListener('mousedown', () => this.els.video.pause());
-
-                // Frame Stepping
-                const FRAME = 0.04;
-                document.getElementById('btn-prev').addEventListener('click', () => {
-                    this.els.video.currentTime -= FRAME;
-                    this.els.video.pause();
-                    AudioSys.playClick();
-                });
-                document.getElementById('btn-next').addEventListener('click', () => {
-                    this.els.video.currentTime += FRAME;
-                    this.els.video.pause();
-                    AudioSys.playClick();
-                });
-
-                // Extract
-                document.getElementById('btn-extract').addEventListener('click', () => this.extractFrame());
-
-                // Video Loop
-                this.els.video.addEventListener('timeupdate', () => this.updateUI());
-            },
-
-            loadVideo: function(file) {
-                if(!file) return;
-                this.log("LOADING DATA STREAM...");
-                const url = URL.createObjectURL(file);
-                this.els.video.src = url;
-                this.els.video.onloadedmetadata = () => {
-                    this.els.upload.style.display = 'none';
-                    this.els.videoStage.style.display = 'flex';
-                    this.els.slider.max = this.els.video.duration;
-                    document.getElementById('time-dur').innerText = this.els.video.duration.toFixed(2) + 's';
-                    this.log("VIDEO MOUNTED SUCCESSFULLY.");
-                    AudioSys.playConfirm();
-                };
-            },
-
-            togglePlay: function() {
-                if(this.els.video.paused) {
-                    this.els.video.play();
-                    this.els.btnPlay.innerText = "PAUSE";
-                    this.log("PLAYBACK: STARTED");
-                } else {
-                    this.els.video.pause();
-                    this.els.btnPlay.innerText = "PLAY";
-                    this.log("PLAYBACK: PAUSED");
+                const data = tctx.getImageData(0,0,this.w,this.h).data;
+                const points = [];
+                // Scan density
+                for(let y=0; y<this.h; y+=3) {
+                    for(let x=0; x<this.w; x+=3) {
+                        if(data[(y*this.w+x)*4+3] > 128) points.push({x,y});
+                    }
                 }
-                AudioSys.playClick();
+                return points;
             },
 
-            updateUI: function() {
-                const v = this.els.video;
-                const pct = (v.currentTime / v.duration) * 100;
-                this.els.scrubFill.style.width = pct + "%";
-                this.els.scrubHead.style.left = pct + "%";
-                document.getElementById('time-curr').innerText = v.currentTime.toFixed(2) + 's';
-                if(document.activeElement !== this.els.slider) this.els.slider.value = v.currentTime;
-            },
-
-            extractFrame: function() {
-                if(this.els.video.readyState < 2) return;
-                this.log("EXTRACTING FRAME...");
+            morphTo: function(text, force=false) {
+                this.targetText = text;
+                const targets = this.scan(text);
                 
-                const canvas = document.getElementById('proc-canvas');
-                canvas.width = this.els.video.videoWidth;
-                canvas.height = this.els.video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(this.els.video, 0, 0, canvas.width, canvas.height);
-                
-                try {
-                    const data = canvas.toDataURL('image/png');
-                    const link = document.createElement('a');
-                    link.download = `MEXTRACT_FRAME_${Date.now()}.png`;
-                    link.href = data;
-                    link.click();
-                    this.log("FRAME SAVED TO DEVICE.");
-                    AudioSys.playConfirm();
-                } catch(e) {
-                    this.log("ERROR: BROWSER SECURITY PREVENTED DOWNLOAD.");
+                // Manage particle pool
+                if(this.particles.length < targets.length) {
+                    const diff = targets.length - this.particles.length;
+                    for(let i=0; i<diff; i++) this.particles.push({
+                        x: Math.random()*this.w, y: Math.random()*this.h,
+                        tx: 0, ty: 0, vx: 0, vy: 0,
+                        color: '#fff' // Base color
+                    });
                 }
+                
+                // Assign targets
+                this.particles.forEach((p, i) => {
+                    if(targets[i]) {
+                        p.tx = targets[i].x;
+                        p.ty = targets[i].y;
+                        p.active = true;
+                        // Glitch effect on trigger
+                        if(!force) {
+                            p.vx = (Math.random()-0.5) * 40; // EXPLODE
+                            p.vy = (Math.random()-0.5) * 40;
+                            p.color = Math.random() > 0.8 ? '#0ff' : (Math.random() > 0.5 ? '#f0f' : '#fff'); // Cyber colors
+                        }
+                    } else {
+                        p.active = false;
+                    }
+                });
+            },
+
+            animate: function() {
+                this.ctx.clearRect(0,0,this.w,this.h);
+                
+                this.particles.forEach(p => {
+                    if(!p.active) return;
+                    
+                    const dx = p.tx - p.x;
+                    const dy = p.ty - p.y;
+                    
+                    // Spring Physics
+                    p.vx += dx * 0.08;
+                    p.vy += dy * 0.08;
+                    p.vx *= 0.80; // Dampening
+                    p.vy *= 0.80;
+                    
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // Draw Glitch Rectangles
+                    this.ctx.fillStyle = p.color;
+                    
+                    // Random flicker
+                    if(Math.abs(p.vx) > 1 && Math.random() > 0.8) {
+                         this.ctx.fillStyle = Math.random() > 0.5 ? '#0ff' : '#f0f';
+                         this.ctx.fillRect(p.x - 5, p.y, 10, 2); // Glitch line
+                    } else {
+                        this.ctx.fillRect(p.x, p.y, 2, 2); // Standard pixel
+                    }
+                    
+                    // Return to white when settled
+                    if(Math.abs(p.vx) < 0.5 && Math.abs(p.vy) < 0.5) p.color = '#fff';
+                });
+                
+                requestAnimationFrame(() => this.animate());
             }
         };
 
-        // Start
-        window.addEventListener('load', () => App.init());
+        // --- APP LOGIC ---
+        window.addEventListener('load', () => {
+            // 1. Start Systems
+            RainSys.init();
+            LogoSys.init();
+            
+            // 2. Auto Boot (1.5 Seconds)
+            const loader = document.getElementById('loader');
+            const app = document.getElementById('app-interface');
+            
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                loader.style.visibility = 'hidden';
+                app.classList.add('active');
+                AudioSys.init(); // Try to init audio if allowed by browser policy on load
+            }, 1500);
 
+            // 3. Clock
+            setInterval(() => {
+                document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB');
+            }, 1000);
+
+            // 4. Interaction Listener (For Audio Policy)
+            document.addEventListener('click', () => AudioSys.init(), {once:true});
+
+            // 5. Video Logic
+            const uploadTrig = document.getElementById('upload-trigger');
+            const fileIn = document.getElementById('file-input');
+            const videoWrap = document.getElementById('video-wrapper');
+            const vid = document.getElementById('main-video');
+            const seekBar = document.getElementById('seek-bar');
+            const btnPlay = document.getElementById('btn-play');
+            
+            uploadTrig.addEventListener('click', () => fileIn.click());
+            fileIn.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(!file) return;
+                const url = URL.createObjectURL(file);
+                vid.src = url;
+                vid.onloadedmetadata = () => {
+                    uploadTrig.style.display = 'none';
+                    videoWrap.style.display = 'flex';
+                    seekBar.max = vid.duration;
+                    document.getElementById('t-dur').innerText = vid.duration.toFixed(2) + "s";
+                    AudioSys.success();
+                };
+            });
+
+            // Seeking
+            seekBar.addEventListener('input', (e) => { vid.currentTime = e.target.value; updateUI(); });
+            seekBar.addEventListener('mousedown', () => vid.pause());
+            
+            vid.addEventListener('timeupdate', updateUI);
+            
+            function updateUI() {
+                const p = (vid.currentTime / vid.duration) * 100;
+                document.getElementById('scrub-fill').style.width = p + '%';
+                document.getElementById('scrub-head').style.left = p + '%';
+                document.getElementById('t-curr').innerText = vid.currentTime.toFixed(2) + "s";
+                if(document.activeElement !== seekBar) seekBar.value = vid.currentTime;
+            }
+
+            // Play Control
+            btnPlay.addEventListener('click', () => {
+                if(vid.paused) { vid.play(); btnPlay.innerText = "PAUSE"; }
+                else { vid.pause(); btnPlay.innerText = "PLAY"; }
+                AudioSys.click();
+            });
+
+            // Frames
+            const F = 0.04;
+            document.getElementById('btn-back').addEventListener('click', () => { vid.currentTime -= F; vid.pause(); AudioSys.click(); });
+            document.getElementById('btn-fwd').addEventListener('click', () => { vid.currentTime += F; vid.pause(); AudioSys.click(); });
+
+            // Extraction
+            function extract(type) {
+                if(vid.readyState < 2) return;
+                const cvs = document.getElementById('proc-canvas');
+                cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
+                const ctx = cvs.getContext('2d');
+                ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
+                
+                try {
+                    const fmt = type === 'png' ? 'image/png' : 'image/jpeg';
+                    const ext = type === 'png' ? '.png' : '.jpg';
+                    const q = type === 'png' ? 1.0 : 0.85;
+                    const data = cvs.toDataURL(fmt, q);
+                    const a = document.createElement('a');
+                    a.href = data;
+                    a.download = `MEXTRACT_${Date.now()}${ext}`;
+                    a.click();
+                    AudioSys.success();
+                } catch(e) {
+                    alert("Error: Security Restriction (CORS).");
+                }
+            }
+
+            document.getElementById('btn-png').addEventListener('click', () => extract('png'));
+            document.getElementById('btn-jpg').addEventListener('click', () => extract('jpg'));
+        });
     </script>
 </body>
 </html>
