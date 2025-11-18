@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MExtract | Protocol 0-1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CORE VARIABLES & RESET --- */
+        :root {
+            --bg: #000000;
+            --fg: #ffffff;
+            --dim: #333333;
+            --grid: #111111;
+            --font-main: 'Space Mono', monospace;
+            --font-head: 'Syncopate', sans-serif;
+            --scan-line-speed: 8s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            cursor: crosshair; /* Tactical Cursor */
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- CRT & NOISE OVERLAYS --- */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            animation: flicker 0.15s infinite;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            position: fixed;
+            z-index: 9998;
+            animation: scan var(--scan-line-speed) linear infinite;
+            pointer-events: none;
+        }
+
+        /* --- TYPOGRAPHY & GLITCHES --- */
+        h1 {
+            font-family: var(--font-head);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            font-size: 3rem;
+            position: relative;
+        }
+
+        .glitch-text {
+            position: relative;
+        }
+
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #ffffff;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 #ffffff;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        /* --- LOADING SCREEN --- */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+
+        .loader-content {
+            text-align: center;
+            width: 300px;
+        }
+
+        .loader-bar-container {
+            width: 100%;
+            height: 2px;
+            background: var(--dim);
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loader-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--fg);
+            animation: loadProgress 2.5s forwards ease-in-out;
+        }
+
+        .sys-log {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 10px;
+            text-align: left;
+            height: 60px;
+            overflow: hidden;
+        }
+
+        /* --- MAIN APP CONTAINER --- */
+        #app {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 1s ease;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- UI COMPONENTS --- */
+        .panel {
+            border: 1px solid var(--fg);
+            padding: 20px;
+            width: 100%;
+            margin-bottom: 20px;
+            position: relative;
+            background: rgba(0,0,0,0.8);
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 10px; height: 10px;
+            background: var(--fg);
+        }
+        .panel::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; right: -1px;
+            width: 10px; height: 10px;
+            background: var(--fg);
+        }
+
+        /* UPLOAD AREA */
+        .upload-area {
+            border: 1px dashed var(--dim);
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: var(--fg);
+            background: rgba(255,255,255,0.05);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--fg);
+            color: var(--fg);
+            padding: 15px 30px;
+            font-family: var(--font-main);
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: var(--fg);
+            color: var(--bg);
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        /* VIDEO & SLIDER */
+        .video-container {
+            width: 100%;
+            background: #050505;
+            border-bottom: 1px solid var(--dim);
+            position: relative;
+            display: none; /* Hidden until upload */
+        }
+
+        video {
+            width: 100%;
+            max-height: 60vh;
+            display: block;
+        }
+
+        .controls {
+            margin-top: 20px;
+            width: 100%;
+            display: none; /* Hidden until upload */
+        }
+
+        /* CUSTOM SLIDER */
+        .cyber-range {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 20px 0;
+        }
+
+        .cyber-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 10px;
+            background: var(--fg);
+            cursor: pointer;
+            margin-top: -9px;
+            box-shadow: 0 0 10px #fff;
+            border: 1px solid #000;
+        }
+
+        .cyber-range::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 2px;
+            cursor: pointer;
+            background: var(--dim);
+            border: 0;
+        }
+
+        .range-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--dim);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+
+        /* DECORATIVE ELEMENTS */
+        .deco-line {
+            width: 1px;
+            height: 100px;
+            background: var(--dim);
+            position: fixed;
+            right: 40px;
+            bottom: 0;
+        }
+
+        .corner-text {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.6rem;
+            writing-mode: vertical-rl;
+            opacity: 0.5;
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            40% { width: 30%; }
+            70% { width: 70%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes scan {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            5% { opacity: 0.95; }
+            10% { opacity: 0.9; }
+            15% { opacity: 0.95; }
+            20% { opacity: 0.99; }
+            100% { opacity: 0.94; }
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(14px, 9999px, 120px, 0); }
+            20% { clip: rect(85px, 9999px, 14px, 0); }
+            40% { clip: rect(60px, 9999px, 85px, 0); }
+            60% { clip: rect(10px, 9999px, 140px, 0); }
+            80% { clip: rect(100px, 9999px, 30px, 0); }
+            100% { clip: rect(45px, 9999px, 60px, 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            25% { clip: rect(14px, 9999px, 45px, 0); }
+            50% { clip: rect(110px, 9999px, 70px, 0); }
+            75% { clip: rect(25px, 9999px, 90px, 0); }
+            100% { clip: rect(5px, 9999px, 120px, 0); }
+        }
+
+        /* HELPER CLASSES */
+        .hidden { display: none !important; }
+        .fade-in { opacity: 1 !important; transform: scale(1) !important; }
+    </style>
+</head>
+<body>
+
+    <!-- CRT VISUAL LAYERS -->
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+
+    <!-- LOADING SCREEN -->
+    <div id="loader">
+        <div class="loader-content">
+            <h1 class="glitch-text" data-text="MEXTRACT">MEXTRACT</h1>
+            <p style="margin-top: 10px; letter-spacing: 2px;">LOSSLESS FRAME EXTRACTION</p>
+            
+            <div class="loader-bar-container">
+                <div class="loader-bar"></div>
+            </div>
+            
+            <div class="sys-log" id="sysLog">
+                > INITIALIZING KERNEL...<br>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP UI -->
+    <div id="app">
+        <header style="width: 100%; margin-bottom: 40px; border-bottom: 2px solid white; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <h2 style="font-family: 'Syncopate'; font-size: 1.5rem;">MExtract_v1.0</h2>
+                <small>>> SYSTEM READY</small>
+            </div>
+            <div style="text-align: right; font-size: 0.7rem;">
+                RAM: ALLOCATED<br>
+                GPU: OPTIMIZED
+            </div>
+        </header>
+
+        <!-- UPLOAD PANEL -->
+        <div class="panel" id="uploadPanel">
+            <label class="upload-area">
+                <div style="font-size: 3rem; margin-bottom: 10px;">+</div>
+                <h3 style="margin-bottom: 10px;">UPLOAD_SOURCE_VIDEO</h3>
+                <p style="font-size: 0.8rem; opacity: 0.7;">SUPPORTED FORMATS: MP4, WEBM, MOV</p>
+                <input type="file" id="videoInput" accept="video/*">
+            </label>
+        </div>
+
+        <!-- VIDEO PROCESSOR -->
+        <div class="panel video-container" id="videoWrapper">
+            <video id="mainVideo" playsinline muted></video>
+        </div>
+
+        <div class="panel controls" id="controlPanel">
+            <div class="range-info">
+                <span>FRAME_SELECTOR</span>
+                <span id="timeDisplay">00.00s / 00.00s</span>
+            </div>
+            
+            <!-- THE SLIDER -->
+            <input type="range" id="seekSlider" class="cyber-range" min="0" value="0" step="0.01">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                <div style="font-size: 0.7rem; max-width: 50%;">
+                    > SELECT FRAME VIA SLIDER<br>
+                    > OUTPUT: NATIVE RESOLUTION (PNG)
+                </div>
+                <button class="btn" id="extractBtn">
+                    <span class="glitch-text" data-text="EXTRACT_FRAME">EXTRACT_FRAME</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- HIDDEN CANVAS FOR PROCESSING -->
+        <canvas id="processCanvas" class="hidden"></canvas>
+
+    </div>
+
+    <div class="deco-line"></div>
+    <div class="corner-text">MExtract // BUILD 2024.11 // NO COLOR</div>
+
+    <script>
+        /* --- LOGIC CORE --- */
+        
+        // DOM Elements
+        const loader = document.getElementById('loader');
+        const sysLog = document.getElementById('sysLog');
+        const app = document.getElementById('app');
+        const videoInput = document.getElementById('videoInput');
+        const video = document.getElementById('mainVideo');
+        const videoWrapper = document.getElementById('videoWrapper');
+        const controlPanel = document.getElementById('controlPanel');
+        const uploadPanel = document.getElementById('uploadPanel');
+        const slider = document.getElementById('seekSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const extractBtn = document.getElementById('extractBtn');
+        const canvas = document.getElementById('processCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- LOADING SEQUENCE SIMULATION ---
+        const logs = [
+            "> LOADING MODULES...",
+            "> MOUNTING VIRTUAL DRIVES...",
+            "> BYPASSING SECURITY PROTOCOLS...",
+            "> CALIBRATING COLOR MATRIX...",
+            "> REMOVING CHROMA...",
+            "> SYSTEM READY."
+        ];
+
+        let logIndex = 0;
+        
+        function addLog() {
+            if (logIndex < logs.length) {
+                sysLog.innerHTML += logs[logIndex] + "<br>";
+                sysLog.scrollTop = sysLog.scrollHeight;
+                logIndex++;
+                setTimeout(addLog, 400); // Random speed usually better, but fixed for smoothness
+            } else {
+                // Finish Loading
+                setTimeout(() => {
+                    loader.style.transform = "translateY(-100%)";
+                    setTimeout(() => {
+                        app.classList.add('fade-in');
+                    }, 500);
+                }, 800);
+            }
+        }
+
+        // Start Loading
+        window.addEventListener('load', () => {
+            addLog();
+        });
+
+        // --- VIDEO HANDLING ---
+
+        videoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Create URL for video
+            const url = URL.createObjectURL(file);
+            video.src = url;
+            
+            // UI Updates
+            uploadPanel.style.display = 'none';
+            videoWrapper.style.display = 'block';
+            controlPanel.style.display = 'block';
+            
+            // Wait for metadata to set slider
+            video.addEventListener('loadedmetadata', function() {
+                slider.max = video.duration;
+                updateTimeDisplay();
+            });
+        });
+
+        // --- SLIDER LOGIC ---
+
+        slider.addEventListener('input', function() {
+            video.currentTime = parseFloat(this.value);
+            updateTimeDisplay();
+        });
+
+        video.addEventListener('timeupdate', function() {
+            // Sync slider if video plays normally (optional feature, currently autoplay off)
+            slider.value = video.currentTime;
+            updateTimeDisplay();
+        });
+
+        function updateTimeDisplay() {
+            const current = video.currentTime.toFixed(2);
+            const total = video.duration ? video.duration.toFixed(2) : "00.00";
+            timeDisplay.innerText = `${current}s / ${total}s`;
+        }
+
+        // --- EXTRACTION LOGIC (THE LOSSLESS PART) ---
+
+        extractBtn.addEventListener('click', function() {
+            if(video.readyState < 2) return; // Not enough data
+
+            // 1. Flash Effect on Screen
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = 0; flash.style.left = 0;
+            flash.style.width = '100%'; flash.style.height = '100%';
+            flash.style.background = 'white';
+            flash.style.zIndex = 10001;
+            flash.style.opacity = 1;
+            flash.style.transition = 'opacity 0.2s';
+            document.body.appendChild(flash);
+            
+            setTimeout(() => { flash.style.opacity = 0; }, 50);
+            setTimeout(() => { flash.remove(); }, 250);
+
+            // 2. Set Canvas to Native Video Resolution (Lossless Dimension)
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // 3. Draw the current frame
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 4. Convert to Image and Download
+            try {
+                // 'image/png' is lossless for web
+                const dataURL = canvas.toDataURL('image/png');
+                
+                const link = document.createElement('a');
+                link.download = `mextract_frame_${video.currentTime.toFixed(3)}.png`;
+                link.href = dataURL;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Optional: Add button success state text
+                const originalText = extractBtn.innerHTML;
+                extractBtn.innerHTML = ">> SAVED <<";
+                setTimeout(() => {
+                    extractBtn.innerHTML = originalText;
+                }, 2000);
+
+            } catch (err) {
+                console.error("Extraction failed", err);
+                alert("Error extracting frame. Video may be tainted (CORS).");
+            }
+        });
+
+        // Keyboard shortcuts (Space to toggle play/pause just in case)
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && video.src) {
+                e.preventDefault();
+                if (video.paused) video.play();
+                else video.pause();
+            }
+        });
+
+    </script>
+</body>
+</html>
