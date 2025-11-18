@@ -3,575 +3,933 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MExtract | Protocol 0-1</title>
+    <title>MEXTRACT | ULTIMATE_BUILD</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Krajjon&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Syncopate:wght@700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CORE VARIABLES & RESET --- */
+        /* 
+        ========================================
+        CORE SYSTEM VARIABLES
+        ========================================
+        */
         :root {
-            --bg: #000000;
-            --fg: #ffffff;
-            --dim: #333333;
-            --grid: #111111;
-            --font-main: 'Space Mono', monospace;
-            --font-head: 'Syncopate', sans-serif;
-            --scan-line-speed: 8s;
+            --bg: #050505;
+            --hex-dark: #000000;
+            --hex-light: #ffffff;
+            --hex-dim: #333333;
+            --hex-grid: rgba(255, 255, 255, 0.05);
+            --primary-font: 'Share Tech Mono', monospace;
+            --header-font: 'Orbitron', sans-serif;
+            --scan-speed: 6s;
+            --border-width: 1px;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            cursor: crosshair; /* Tactical Cursor */
+            cursor: none !important; /* REPLACING SYSTEM CURSOR */
+            user-select: none;
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--fg);
-            font-family: var(--font-main);
-            overflow-x: hidden;
+            background-color: var(--hex-dark);
+            color: var(--hex-light);
+            font-family: var(--primary-font);
             height: 100vh;
             width: 100vw;
+            overflow: hidden;
+            perspective: 1000px;
         }
 
-        /* --- CRT & NOISE OVERLAYS --- */
-        .crt-overlay {
+        /* 
+        ========================================
+        CUSTOM CURSOR SYSTEM
+        ========================================
+        */
+        #cursor-system {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
             pointer-events: none;
-            z-index: 9999;
-            background: 
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
-                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            animation: flicker 0.15s infinite;
+            z-index: 100000;
+            mix-blend-mode: exclusion;
         }
-
-        .scanline {
-            width: 100%;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            position: fixed;
-            z-index: 9998;
-            animation: scan var(--scan-line-speed) linear infinite;
-            pointer-events: none;
-        }
-
-        /* --- TYPOGRAPHY & GLITCHES --- */
-        h1 {
-            font-family: var(--font-head);
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            font-size: 3rem;
-            position: relative;
-        }
-
-        .glitch-text {
-            position: relative;
-        }
-
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
+        .cursor-dot {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg);
+            width: 4px; height: 4px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-ring {
+            position: absolute;
+            width: 40px; height: 40px;
+            border: 1px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s;
+        }
+        .cursor-crosshair {
+            position: absolute;
+            width: 100vw; height: 1px;
+            background: rgba(255,255,255,0.1);
+            top: 0; left: -50vw; /* Center handled by JS */
+        }
+        .cursor-crosshair-v {
+            position: absolute;
+            height: 100vh; width: 1px;
+            background: rgba(255,255,255,0.1);
+            top: -50vh; left: 0;
         }
 
-        .glitch-text::before {
-            left: 2px;
-            text-shadow: -1px 0 #ffffff;
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        /* Active State for Cursor */
+        body.hover-active .cursor-ring {
+            width: 80px; height: 80px;
+            border-style: dashed;
+            animation: spin 4s linear infinite;
+            background: rgba(255,255,255,0.05);
         }
 
-        .glitch-text::after {
-            left: -2px;
-            text-shadow: -1px 0 #ffffff;
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim 2.5s infinite linear alternate-reverse;
-        }
-
-        /* --- LOADING SCREEN --- */
-        #loader {
+        /* 
+        ========================================
+        VISUAL FX LAYERS
+        ========================================
+        */
+        .noise-layer {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg);
-            z-index: 10000;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIwLjA1Ii8+PC9zdmc+');
+            animation: noiseShift 0.2s infinite;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .scan-line {
+            position: fixed;
+            left: 0; top: 0;
+            width: 100%; height: 2px;
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            animation: scan var(--scan-speed) linear infinite;
+            z-index: 998;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .vignette {
+            position: fixed;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 50%, black 100%);
+            z-index: 997;
+            pointer-events: none;
+        }
+
+        /* 3D GRID BACKGROUND */
+        #grid-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        /* 
+        ========================================
+        UI ARCHITECTURE
+        ========================================
+        */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            grid-template-rows: 80px 1fr 60px;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            z-index: 100;
+            opacity: 0; /* Start Hidden for Boot Sequence */
+        }
+
+        /* --- HEADER --- */
+        .top-bar {
+            grid-column: 1 / -1;
+            border-bottom: 1px solid var(--hex-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .brand-logo {
+            font-family: var(--header-font);
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+            position: relative;
+        }
+        .brand-logo::after {
+            content: '_V3.0';
+            font-size: 0.8rem;
+            position: absolute;
+            top: 0; right: -40px;
+            opacity: 0.7;
+        }
+
+        /* --- SIDEBAR (LEFT) --- */
+        .sidebar-left {
+            border-right: 1px solid var(--hex-dim);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.4);
+        }
+
+        .sys-info-block {
+            font-size: 0.7rem;
+            line-height: 1.6;
+            color: #888;
+        }
+        .sys-val { color: #fff; }
+
+        /* --- MAIN STAGE (CENTER) --- */
+        .main-stage {
+            position: relative;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+            padding: 40px;
+            overflow: hidden;
         }
 
-        .loader-content {
-            text-align: center;
-            width: 300px;
-        }
-
-        .loader-bar-container {
+        /* UPLOAD WIDGET */
+        .upload-widget {
             width: 100%;
-            height: 2px;
-            background: var(--dim);
-            margin-top: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .loader-bar {
-            width: 0%;
-            height: 100%;
-            background: var(--fg);
-            animation: loadProgress 2.5s forwards ease-in-out;
-        }
-
-        .sys-log {
-            font-size: 0.7rem;
-            opacity: 0.7;
-            margin-top: 10px;
-            text-align: left;
-            height: 60px;
-            overflow: hidden;
-        }
-
-        /* --- MAIN APP CONTAINER --- */
-        #app {
-            opacity: 0;
-            transform: scale(0.95);
-            transition: all 1s ease;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
+            max-width: 600px;
+            height: 300px;
+            border: 1px dashed var(--hex-dim);
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
-        }
-
-        /* --- UI COMPONENTS --- */
-        .panel {
-            border: 1px solid var(--fg);
-            padding: 20px;
-            width: 100%;
-            margin-bottom: 20px;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
             position: relative;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
         }
-
-        .panel::before {
+        .upload-widget:hover {
+            border-color: #fff;
+            box-shadow: 0 0 30px rgba(255,255,255,0.05);
+            transform: scale(1.02);
+        }
+        .upload-widget::before {
             content: '';
             position: absolute;
-            top: -1px; left: -1px;
-            width: 10px; height: 10px;
-            background: var(--fg);
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border: 1px solid transparent;
         }
-        .panel::after {
-            content: '';
-            position: absolute;
-            bottom: -1px; right: -1px;
-            width: 10px; height: 10px;
-            background: var(--fg);
+        .upload-widget:hover::before {
+            animation: borderSnake 2s linear infinite;
         }
 
-        /* UPLOAD AREA */
-        .upload-area {
-            border: 1px dashed var(--dim);
-            padding: 40px;
-            text-align: center;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .upload-area:hover {
-            border-color: var(--fg);
-            background: rgba(255,255,255,0.05);
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        .btn {
-            background: transparent;
-            border: 1px solid var(--fg);
-            color: var(--fg);
-            padding: 15px 30px;
-            font-family: var(--font-main);
-            text-transform: uppercase;
-            font-weight: bold;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-            margin-top: 10px;
-        }
-
-        .btn:hover {
-            background: var(--fg);
-            color: var(--bg);
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
-        }
-
-        /* VIDEO & SLIDER */
-        .video-container {
-            width: 100%;
-            background: #050505;
-            border-bottom: 1px solid var(--dim);
-            position: relative;
+        /* VIDEO PLAYER CONTAINER */
+        .video-hud {
             display: none; /* Hidden until upload */
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            border: 1px solid var(--hex-dim);
+            background: #000;
+            position: relative;
         }
+        
+        /* DECORATIVE CORNERS */
+        .corner-bracket {
+            position: absolute;
+            width: 20px; height: 20px;
+            border-color: #fff;
+            border-style: solid;
+            pointer-events: none;
+        }
+        .cb-tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .cb-tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+        .cb-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+        .cb-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
         video {
             width: 100%;
+            height: auto;
             max-height: 60vh;
-            display: block;
+            object-fit: contain;
         }
 
-        .controls {
-            margin-top: 20px;
+        /* CONTROLS AREA */
+        .control-deck {
+            padding: 20px;
+            border-top: 1px solid var(--hex-dim);
+            background: rgba(10,10,10,0.9);
+        }
+
+        /* SLIDER TIMELINE */
+        .timeline-wrapper {
+            position: relative;
             width: 100%;
-            display: none; /* Hidden until upload */
+            height: 40px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
         }
-
-        /* CUSTOM SLIDER */
-        .cyber-range {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-            margin: 20px 0;
-        }
-
-        .cyber-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px;
-            width: 10px;
-            background: var(--fg);
-            cursor: pointer;
-            margin-top: -9px;
-            box-shadow: 0 0 10px #fff;
-            border: 1px solid #000;
-        }
-
-        .cyber-range::-webkit-slider-runnable-track {
+        .timeline-track {
             width: 100%;
             height: 2px;
-            cursor: pointer;
-            background: var(--dim);
-            border: 0;
+            background: var(--hex-dim);
+            position: relative;
+        }
+        .timeline-progress {
+            height: 100%;
+            background: #fff;
+            width: 0%;
+            position: absolute;
+            top: 0; left: 0;
+        }
+        input[type="range"] {
+            position: absolute;
+            width: 100%;
+            height: 40px;
+            opacity: 0;
+            z-index: 10;
+            cursor: none;
+        }
+        .thumb-indicator {
+            width: 4px; height: 20px;
+            background: #fff;
+            position: absolute;
+            top: -9px;
+            transform: translateX(-50%);
+            pointer-events: none;
+            box-shadow: 0 0 10px #fff;
         }
 
-        .range-info {
+        /* BUTTONS */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .cyber-btn {
+            background: transparent;
+            border: 1px solid var(--hex-dim);
+            color: #fff;
+            padding: 12px 25px;
+            font-family: var(--header-font);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        .cyber-btn:hover {
+            border-color: #fff;
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
+        .cyber-btn:active {
+            background: #fff;
+            color: #000;
+        }
+        
+        /* FRAME STEPPER */
+        .stepper-group {
+            display: flex;
+            gap: 5px;
+            margin-right: auto;
+        }
+        .step-btn {
+            width: 40px;
+            padding: 10px 0;
+            text-align: center;
+        }
+
+        /* --- SIDEBAR (RIGHT) - TERMINAL --- */
+        .sidebar-right {
+            border-left: 1px solid var(--hex-dim);
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+        }
+        .terminal-header {
+            padding: 15px;
+            background: var(--hex-dim);
+            font-family: var(--header-font);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        #terminal-log {
+            flex: 1;
+            padding: 15px;
+            font-size: 0.7rem;
+            font-family: 'Share Tech Mono', monospace;
+            color: #aaa;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .log-entry {
+            animation: fadeIn 0.3s ease;
+        }
+        .log-success { color: #fff; text-shadow: 0 0 5px #fff; }
+        .log-warn { color: #aaa; font-style: italic; }
+
+        /* --- FOOTER --- */
+        .footer-bar {
+            grid-column: 1 / -1;
+            border-top: 1px solid var(--hex-dim);
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            background: #000;
+            z-index: 200;
+        }
+        
+        .social-dock {
+            display: flex;
+            gap: 30px;
+        }
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #888;
+            text-transform: uppercase;
             font-size: 0.8rem;
-            border-bottom: 1px solid var(--dim);
-            padding-bottom: 5px;
-            margin-bottom: 10px;
+            transition: 0.3s;
+        }
+        .social-link:hover {
+            color: #fff;
+            text-shadow: 0 0 8px rgba(255,255,255,0.6);
+        }
+        .social-icon {
+            width: 20px; height: 20px;
+            fill: currentColor;
         }
 
-        /* DECORATIVE ELEMENTS */
-        .deco-line {
-            width: 1px;
-            height: 100px;
-            background: var(--dim);
+        /* 
+        ========================================
+        LOADING SEQUENCE (BIOS BOOT)
+        ========================================
+        */
+        #bios-screen {
             position: fixed;
-            right: 40px;
-            bottom: 0;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 99999;
+            padding: 50px;
+            font-family: 'Share Tech Mono', monospace;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
         }
-
-        .corner-text {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            font-size: 0.6rem;
-            writing-mode: vertical-rl;
-            opacity: 0.5;
+        .bios-text {
+            margin-bottom: 5px;
+            font-size: 1rem;
         }
+        .blink { animation: blinker 0.1s infinite; }
 
-        /* --- ANIMATIONS --- */
-        @keyframes loadProgress {
-            0% { width: 0%; }
-            40% { width: 30%; }
-            70% { width: 70%; }
-            100% { width: 100%; }
-        }
+        /* ANIMATIONS */
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes noiseShift { 0% { transform: translate(0,0); } 100% { transform: translate(-10px, 10px); } }
+        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+        @keyframes blinker { 50% { opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
 
-        @keyframes scan {
-            0% { top: -10%; }
-            100% { top: 110%; }
-        }
-
-        @keyframes flicker {
-            0% { opacity: 0.97; }
-            5% { opacity: 0.95; }
-            10% { opacity: 0.9; }
-            15% { opacity: 0.95; }
-            20% { opacity: 0.99; }
-            100% { opacity: 0.94; }
-        }
-
-        @keyframes glitch-anim {
-            0% { clip: rect(14px, 9999px, 120px, 0); }
-            20% { clip: rect(85px, 9999px, 14px, 0); }
-            40% { clip: rect(60px, 9999px, 85px, 0); }
-            60% { clip: rect(10px, 9999px, 140px, 0); }
-            80% { clip: rect(100px, 9999px, 30px, 0); }
-            100% { clip: rect(45px, 9999px, 60px, 0); }
-        }
-
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(65px, 9999px, 100px, 0); }
-            25% { clip: rect(14px, 9999px, 45px, 0); }
-            50% { clip: rect(110px, 9999px, 70px, 0); }
-            75% { clip: rect(25px, 9999px, 90px, 0); }
-            100% { clip: rect(5px, 9999px, 120px, 0); }
-        }
-
-        /* HELPER CLASSES */
         .hidden { display: none !important; }
-        .fade-in { opacity: 1 !important; transform: scale(1) !important; }
+        .fade-in-layout { animation: layoutReveal 1s forwards ease-out; }
+        @keyframes layoutReveal { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+
     </style>
 </head>
 <body>
 
-    <!-- CRT VISUAL LAYERS -->
-    <div class="crt-overlay"></div>
-    <div class="scanline"></div>
+    <!-- AUDIO FX (Visual Only Concept) -->
+    <div class="noise-layer"></div>
+    <div class="scan-line"></div>
+    <div class="vignette"></div>
+    <canvas id="grid-canvas"></canvas>
 
-    <!-- LOADING SCREEN -->
-    <div id="loader">
-        <div class="loader-content">
-            <h1 class="glitch-text" data-text="MEXTRACT">MEXTRACT</h1>
-            <p style="margin-top: 10px; letter-spacing: 2px;">LOSSLESS FRAME EXTRACTION</p>
-            
-            <div class="loader-bar-container">
-                <div class="loader-bar"></div>
-            </div>
-            
-            <div class="sys-log" id="sysLog">
-                > INITIALIZING KERNEL...<br>
-            </div>
-        </div>
+    <!-- MOUSE TRACKER -->
+    <div id="cursor-system">
+        <div class="cursor-crosshair"></div>
+        <div class="cursor-crosshair-v"></div>
+        <div class="cursor-ring"></div>
+        <div class="cursor-dot"></div>
     </div>
 
-    <!-- MAIN APP UI -->
-    <div id="app">
-        <header style="width: 100%; margin-bottom: 40px; border-bottom: 2px solid white; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+    <!-- BIOS BOOT SCREEN -->
+    <div id="bios-screen">
+        <div id="bios-log"></div>
+    </div>
+
+    <!-- MAIN UI LAYOUT -->
+    <div class="layout-grid hidden" id="main-layout">
+        
+        <!-- HEADER -->
+        <div class="top-bar">
+            <div class="brand-box hover-target">
+                <div class="brand-logo glitch-hover" data-text="MEXTRACT">MEXTRACT</div>
+            </div>
+            <div style="text-align: right; font-size: 0.8rem;">
+                <div id="clock">00:00:00:00</div>
+                <div style="color: #666;">SECURE CONNECTION // PROTOCOL 443</div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR LEFT (STATS) -->
+        <div class="sidebar-left">
             <div>
-                <h2 style="font-family: 'Syncopate'; font-size: 1.5rem;">MExtract_v1.0</h2>
-                <small>>> SYSTEM READY</small>
-            </div>
-            <div style="text-align: right; font-size: 0.7rem;">
-                RAM: ALLOCATED<br>
-                GPU: OPTIMIZED
-            </div>
-        </header>
-
-        <!-- UPLOAD PANEL -->
-        <div class="panel" id="uploadPanel">
-            <label class="upload-area">
-                <div style="font-size: 3rem; margin-bottom: 10px;">+</div>
-                <h3 style="margin-bottom: 10px;">UPLOAD_SOURCE_VIDEO</h3>
-                <p style="font-size: 0.8rem; opacity: 0.7;">SUPPORTED FORMATS: MP4, WEBM, MOV</p>
-                <input type="file" id="videoInput" accept="video/*">
-            </label>
-        </div>
-
-        <!-- VIDEO PROCESSOR -->
-        <div class="panel video-container" id="videoWrapper">
-            <video id="mainVideo" playsinline muted></video>
-        </div>
-
-        <div class="panel controls" id="controlPanel">
-            <div class="range-info">
-                <span>FRAME_SELECTOR</span>
-                <span id="timeDisplay">00.00s / 00.00s</span>
-            </div>
-            
-            <!-- THE SLIDER -->
-            <input type="range" id="seekSlider" class="cyber-range" min="0" value="0" step="0.01">
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-                <div style="font-size: 0.7rem; max-width: 50%;">
-                    > SELECT FRAME VIA SLIDER<br>
-                    > OUTPUT: NATIVE RESOLUTION (PNG)
+                <div class="terminal-header" style="background: transparent; padding: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">SYSTEM STATUS</div>
+                <div class="sys-info-block">
+                    CPU LOAD: <span class="sys-val" id="cpu-load">12%</span><br>
+                    MEMORY: <span class="sys-val" id="mem-load">4096 MB</span><br>
+                    GPU ACCEL: <span class="sys-val">ENABLED</span><br>
+                    RENDERER: <span class="sys-val">CANVAS 2D</span>
                 </div>
-                <button class="btn" id="extractBtn">
-                    <span class="glitch-text" data-text="EXTRACT_FRAME">EXTRACT_FRAME</span>
-                </button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <div class="terminal-header" style="background: transparent; padding: 0; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">MOUSE COORDS</div>
+                <div class="sys-info-block">
+                    X: <span class="sys-val" id="mouse-x">000</span><br>
+                    Y: <span class="sys-val" id="mouse-y">000</span>
+                </div>
             </div>
         </div>
 
-        <!-- HIDDEN CANVAS FOR PROCESSING -->
-        <canvas id="processCanvas" class="hidden"></canvas>
+        <!-- MAIN STAGE -->
+        <div class="main-stage">
+            
+            <!-- UPLOAD COMPONENT -->
+            <div class="upload-widget hover-target" id="drop-zone">
+                <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+                <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+                
+                <h2 style="font-family: 'Orbitron'; margin-bottom: 10px;">INITIATE UPLOAD</h2>
+                <p style="color: #888; font-size: 0.8rem;">[ DRAG VIDEO FILE OR CLICK ]</p>
+                <input type="file" id="file-input" accept="video/*" style="display:none;">
+            </div>
+
+            <!-- VIDEO COMPONENT -->
+            <div class="video-hud" id="video-interface">
+                <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
+                <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
+
+                <!-- Canvas for Video Rendering -->
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center; background: black; overflow: hidden; position: relative;">
+                    <video id="main-video" playsinline muted></video>
+                    <div style="position: absolute; top: 20px; left: 20px; font-size: 0.7rem; color: rgba(255,255,255,0.5);">
+                        RES: <span id="vid-res">0x0</span><br>
+                        DUR: <span id="vid-dur">00s</span>
+                    </div>
+                </div>
+
+                <!-- CONTROLS -->
+                <div class="control-deck">
+                    <div class="timeline-wrapper hover-target">
+                        <div class="timeline-track">
+                            <div class="timeline-progress" id="progress-bar"></div>
+                            <div class="thumb-indicator" id="thumb"></div>
+                        </div>
+                        <input type="range" id="seek-slider" min="0" value="0" step="0.001">
+                    </div>
+
+                    <div class="action-bar">
+                        <div class="stepper-group">
+                            <button class="cyber-btn step-btn hover-target" id="step-back">&lt;</button>
+                            <button class="cyber-btn hover-target" id="play-btn">PLAY/PAUSE</button>
+                            <button class="cyber-btn step-btn hover-target" id="step-fwd">&gt;</button>
+                        </div>
+                        
+                        <div style="font-family: 'Share Tech Mono'; font-size: 1.2rem; margin-right: 20px;" id="time-display">00.00.00</div>
+                        
+                        <button class="cyber-btn hover-target" id="extract-btn" style="border-color: #fff; font-weight: bold;">
+                            [ EXECUTE EXTRACT ]
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDEBAR (TERMINAL) -->
+        <div class="sidebar-right">
+            <div class="terminal-header">>> EVENT_LOG</div>
+            <div id="terminal-log">
+                <div class="log-entry">> KERNEL INITIALIZED...</div>
+                <div class="log-entry">> WAITING FOR INPUT...</div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer-bar">
+            <div style="font-size: 0.7rem; color: #555;">
+                MAXFLUX AI INDUSTRIES // EST 2025
+            </div>
+            
+            <div class="social-dock">
+                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="social-link hover-target">
+                    <svg class="social-icon" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                    @maxfluxai
+                </a>
+                <a href="https://www.x.com/maxfluxai" target="_blank" class="social-link hover-target">
+                    <svg class="social-icon" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    @maxfluxai
+                </a>
+            </div>
+        </div>
 
     </div>
-
-    <div class="deco-line"></div>
-    <div class="corner-text">MExtract // BUILD 2024.11 // NO COLOR</div>
+    
+    <!-- HIDDEN CANVAS FOR PROCESSING -->
+    <canvas id="proc-canvas" class="hidden"></canvas>
 
     <script>
-        /* --- LOGIC CORE --- */
-        
-        // DOM Elements
-        const loader = document.getElementById('loader');
-        const sysLog = document.getElementById('sysLog');
-        const app = document.getElementById('app');
-        const videoInput = document.getElementById('videoInput');
-        const video = document.getElementById('mainVideo');
-        const videoWrapper = document.getElementById('videoWrapper');
-        const controlPanel = document.getElementById('controlPanel');
-        const uploadPanel = document.getElementById('uploadPanel');
-        const slider = document.getElementById('seekSlider');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const extractBtn = document.getElementById('extractBtn');
-        const canvas = document.getElementById('processCanvas');
-        const ctx = canvas.getContext('2d');
+        /* 
+        ========================================
+        SYSTEM KERNEL (JAVASCRIPT)
+        ========================================
+        */
 
-        // --- LOADING SEQUENCE SIMULATION ---
-        const logs = [
-            "> LOADING MODULES...",
-            "> MOUNTING VIRTUAL DRIVES...",
-            "> BYPASSING SECURITY PROTOCOLS...",
-            "> CALIBRATING COLOR MATRIX...",
-            "> REMOVING CHROMA...",
-            "> SYSTEM READY."
-        ];
-
-        let logIndex = 0;
-        
-        function addLog() {
-            if (logIndex < logs.length) {
-                sysLog.innerHTML += logs[logIndex] + "<br>";
-                sysLog.scrollTop = sysLog.scrollHeight;
-                logIndex++;
-                setTimeout(addLog, 400); // Random speed usually better, but fixed for smoothness
-            } else {
-                // Finish Loading
-                setTimeout(() => {
-                    loader.style.transform = "translateY(-100%)";
-                    setTimeout(() => {
-                        app.classList.add('fade-in');
-                    }, 500);
-                }, 800);
+        // --- CLASS: TERMINAL LOGGER ---
+        class Terminal {
+            constructor(elementId) {
+                this.el = document.getElementById(elementId);
+            }
+            log(msg, type = 'info') {
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                
+                const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+                if(type === 'success') div.classList.add('log-success');
+                if(type === 'warn') div.classList.add('log-warn');
+                
+                div.innerHTML = `[${time}] > ${msg}`;
+                this.el.appendChild(div);
+                this.el.scrollTop = this.el.scrollHeight;
             }
         }
+        const term = new Terminal('terminal-log');
 
-        // Start Loading
-        window.addEventListener('load', () => {
-            addLog();
+        // --- BOOT SEQUENCE ---
+        const bootText = [
+            "INITIALIZING MAXFLUX_OS v3.1...",
+            "LOADING MEMORY MODULES... OK",
+            "CHECKING GPU ACCELERATION... DETECTED",
+            "MOUNTING VIRTUAL FILE SYSTEM... OK",
+            "ESTABLISHING NEURAL LINK... OK",
+            "WELCOME USER."
+        ];
+
+        const biosLog = document.getElementById('bios-log');
+        const biosScreen = document.getElementById('bios-screen');
+        const mainLayout = document.getElementById('main-layout');
+        let bootIndex = 0;
+
+        function runBoot() {
+            if(bootIndex < bootText.length) {
+                const p = document.createElement('div');
+                p.className = 'bios-text';
+                p.innerText = bootText[bootIndex];
+                biosLog.appendChild(p);
+                bootIndex++;
+                setTimeout(runBoot, 300); // Fast boot
+            } else {
+                const cursor = document.createElement('span');
+                cursor.className = 'blink';
+                cursor.innerText = '_';
+                biosLog.appendChild(cursor);
+                
+                setTimeout(() => {
+                    biosScreen.classList.add('hidden');
+                    mainLayout.classList.remove('hidden');
+                    mainLayout.classList.add('fade-in-layout');
+                    term.log("SYSTEM READY.");
+                    initMatrixGrid(); // Start background
+                }, 1000);
+            }
+        }
+        window.onload = runBoot;
+
+        // --- MATRIX 3D GRID BACKGROUND ---
+        function initMatrixGrid() {
+            const canvas = document.getElementById('grid-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+            
+            function resize() {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                canvas.width = width;
+                canvas.height = height;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            let offset = 0;
+            
+            function draw() {
+                ctx.fillStyle = '#050505';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Horizon line
+                const horizon = height * 0.4;
+                
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.lineWidth = 1;
+                
+                // Vertical lines (Perspective)
+                for(let i = -width; i < width * 2; i += 50) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, height);
+                    ctx.lineTo(width/2, horizon); // Vanishing point
+                    ctx.stroke();
+                }
+                
+                // Horizontal lines (Moving)
+                offset = (offset + 0.5) % 40;
+                for(let y = horizon; y < height; y += 40 * (y/horizon)) { // Nonlinear spacing
+                    let drawY = y + offset * (y/height); // movement effect
+                    if(drawY > height) drawY -= (height - horizon);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, drawY);
+                    ctx.lineTo(width, drawY);
+                    ctx.stroke();
+                }
+                
+                // Random Glitch Rect
+                if(Math.random() > 0.95) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                    const h = Math.random() * 20;
+                    const y = Math.random() * height;
+                    ctx.fillRect(0, y, width, h);
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // --- MOUSE TRACKING SYSTEM ---
+        const cursorSys = document.getElementById('cursor-system');
+        const cursorRing = document.querySelector('.cursor-ring');
+        const cursorDot = document.querySelector('.cursor-dot');
+        const crossH = document.querySelector('.cursor-crosshair');
+        const crossV = document.querySelector('.cursor-crosshair-v');
+        const coordX = document.getElementById('mouse-x');
+        const coordY = document.getElementById('mouse-y');
+        
+        document.addEventListener('mousemove', (e) => {
+            cursorSys.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+            
+            coordX.innerText = e.clientX.toString().padStart(4, '0');
+            coordY.innerText = e.clientY.toString().padStart(4, '0');
         });
 
-        // --- VIDEO HANDLING ---
+        // Hover Effects
+        document.querySelectorAll('.hover-target').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
+        });
 
-        videoInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        // --- CLOCK ---
+        setInterval(() => {
+            const now = new Date();
+            const ms = Math.floor(now.getMilliseconds() / 10);
+            document.getElementById('clock').innerText = 
+                now.toLocaleTimeString('en-GB') + ':' + ms.toString().padStart(2, '0');
+            
+            // CPU Randomizer
+            if(Math.random() > 0.5) {
+                document.getElementById('cpu-load').innerText = Math.floor(Math.random() * 30 + 10) + "%";
+            }
+        }, 100);
 
-            // Create URL for video
+
+        // --- VIDEO CONTROLLER CORE ---
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const videoInterface = document.getElementById('video-interface');
+        const video = document.getElementById('main-video');
+        const slider = document.getElementById('seek-slider');
+        const progressBar = document.getElementById('progress-bar');
+        const thumb = document.getElementById('thumb');
+        const timeDisplay = document.getElementById('time-display');
+        const playBtn = document.getElementById('play-btn');
+        const extractBtn = document.getElementById('extract-btn');
+        
+        // Upload Handling
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#fff';
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '');
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            handleFile(e.dataTransfer.files[0]);
+        });
+        
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        function handleFile(file) {
+            if(!file || !file.type.startsWith('video/')) {
+                term.log("ERROR: INVALID FILE TYPE", "warn");
+                return;
+            }
+
+            term.log(`LOADING: ${file.name}`);
             const url = URL.createObjectURL(file);
             video.src = url;
             
-            // UI Updates
-            uploadPanel.style.display = 'none';
-            videoWrapper.style.display = 'block';
-            controlPanel.style.display = 'block';
-            
-            // Wait for metadata to set slider
-            video.addEventListener('loadedmetadata', function() {
+            video.onloadedmetadata = () => {
+                dropZone.classList.add('hidden');
+                videoInterface.style.display = 'flex';
+                
                 slider.max = video.duration;
-                updateTimeDisplay();
-            });
-        });
-
-        // --- SLIDER LOGIC ---
-
-        slider.addEventListener('input', function() {
-            video.currentTime = parseFloat(this.value);
-            updateTimeDisplay();
-        });
-
-        video.addEventListener('timeupdate', function() {
-            // Sync slider if video plays normally (optional feature, currently autoplay off)
-            slider.value = video.currentTime;
-            updateTimeDisplay();
-        });
-
-        function updateTimeDisplay() {
-            const current = video.currentTime.toFixed(2);
-            const total = video.duration ? video.duration.toFixed(2) : "00.00";
-            timeDisplay.innerText = `${current}s / ${total}s`;
+                document.getElementById('vid-res').innerText = `${video.videoWidth}x${video.videoHeight}`;
+                document.getElementById('vid-dur').innerText = video.duration.toFixed(2) + "s";
+                
+                term.log("METADATA PARSED. INTERFACE UNLOCKED.", "success");
+            };
         }
 
-        // --- EXTRACTION LOGIC (THE LOSSLESS PART) ---
-
-        extractBtn.addEventListener('click', function() {
-            if(video.readyState < 2) return; // Not enough data
-
-            // 1. Flash Effect on Screen
-            const flash = document.createElement('div');
-            flash.style.position = 'fixed';
-            flash.style.top = 0; flash.style.left = 0;
-            flash.style.width = '100%'; flash.style.height = '100%';
-            flash.style.background = 'white';
-            flash.style.zIndex = 10001;
-            flash.style.opacity = 1;
-            flash.style.transition = 'opacity 0.2s';
-            document.body.appendChild(flash);
-            
-            setTimeout(() => { flash.style.opacity = 0; }, 50);
-            setTimeout(() => { flash.remove(); }, 250);
-
-            // 2. Set Canvas to Native Video Resolution (Lossless Dimension)
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-
-            // 3. Draw the current frame
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // 4. Convert to Image and Download
-            try {
-                // 'image/png' is lossless for web
-                const dataURL = canvas.toDataURL('image/png');
-                
-                const link = document.createElement('a');
-                link.download = `mextract_frame_${video.currentTime.toFixed(3)}.png`;
-                link.href = dataURL;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Optional: Add button success state text
-                const originalText = extractBtn.innerHTML;
-                extractBtn.innerHTML = ">> SAVED <<";
-                setTimeout(() => {
-                    extractBtn.innerHTML = originalText;
-                }, 2000);
-
-            } catch (err) {
-                console.error("Extraction failed", err);
-                alert("Error extracting frame. Video may be tainted (CORS).");
+        // Play/Pause
+        playBtn.addEventListener('click', () => {
+            if(video.paused) {
+                video.play();
+                playBtn.innerText = "PAUSE";
+                term.log("PLAYBACK STARTED");
+            } else {
+                video.pause();
+                playBtn.innerText = "PLAY";
+                term.log("PLAYBACK PAUSED");
             }
         });
 
-        // Keyboard shortcuts (Space to toggle play/pause just in case)
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && video.src) {
-                e.preventDefault();
-                if (video.paused) video.play();
-                else video.pause();
+        // Slider Logic (The hard part)
+        slider.addEventListener('input', updateVideoFromSlider);
+        
+        function updateVideoFromSlider() {
+            video.currentTime = slider.value;
+            updateUI();
+        }
+
+        video.addEventListener('timeupdate', () => {
+            if(!slider.matches(':active')) slider.value = video.currentTime;
+            updateUI();
+        });
+
+        function updateUI() {
+            const pct = (video.currentTime / video.duration) * 100;
+            progressBar.style.width = pct + "%";
+            thumb.style.left = pct + "%";
+            
+            // Convert to MM:SS:ms
+            const min = Math.floor(video.currentTime / 60).toString().padStart(2,'0');
+            const sec = Math.floor(video.currentTime % 60).toString().padStart(2,'0');
+            const ms = Math.floor((video.currentTime % 1) * 100).toString().padStart(2,'0');
+            timeDisplay.innerText = `${min}:${sec}.${ms}`;
+        }
+
+        // Step Buttons
+        document.getElementById('step-back').addEventListener('click', () => {
+            video.pause();
+            video.currentTime = Math.max(0, video.currentTime - 0.04);
+            term.log("STEP REVERSE");
+        });
+        document.getElementById('step-fwd').addEventListener('click', () => {
+            video.pause();
+            video.currentTime = Math.min(video.duration, video.currentTime + 0.04);
+            term.log("STEP FORWARD");
+        });
+
+
+        // --- EXTRACTION ENGINE ---
+        extractBtn.addEventListener('click', () => {
+            if(video.readyState < 2) {
+                term.log("ERROR: NO VIDEO DATA", "warn");
+                return;
             }
+
+            term.log("INITIATING EXTRACTION PROTOCOL...");
+            
+            // 1. Flash Effect
+            const flash = document.createElement('div');
+            flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999999;mix-blend-mode:difference;animation:blinker 0.1s 2;";
+            document.body.appendChild(flash);
+            setTimeout(() => flash.remove(), 200);
+
+            // 2. Canvas Processing
+            const pCanvas = document.getElementById('proc-canvas');
+            const pCtx = pCanvas.getContext('2d');
+            
+            pCanvas.width = video.videoWidth;
+            pCanvas.height = video.videoHeight;
+            
+            pCtx.drawImage(video, 0, 0, pCanvas.width, pCanvas.height);
+            
+            // 3. Generate File
+            try {
+                const data = pCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `MEXTRACT_FRAME_${video.currentTime.toFixed(3)}.png`;
+                link.href = data;
+                link.click();
+                
+                term.log(`FRAME SAVED: ${link.download}`, "success");
+            } catch (e) {
+                term.log("ERROR: CORRUPTED STREAM (CORS)", "warn");
+            }
+        });
+
+        // Glitch Text Effect on Hover
+        const glitchTargets = document.querySelectorAll('.glitch-hover');
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890#@$%&';
+        
+        glitchTargets.forEach(target => {
+            target.addEventListener('mouseover', () => {
+                const original = target.dataset.text;
+                let iter = 0;
+                
+                const interval = setInterval(() => {
+                    target.innerText = original.split('').map((l, i) => {
+                        if(i < iter) return original[i];
+                        return chars[Math.floor(Math.random() * chars.length)];
+                    }).join('');
+                    
+                    if(iter >= original.length) clearInterval(interval);
+                    iter += 1/3;
+                }, 30);
+            });
         });
 
     </script>
