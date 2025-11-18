@@ -3,569 +3,515 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MEXTRACT | ULTIMATE_BUILD</title>
+    <title>MEXTRACT | HYPER_FLUID_V4</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Krajjon&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&family=Syncopate:wght@700&display=swap" rel="stylesheet">
 
     <style>
-        /* 
-        ========================================
-        CORE SYSTEM VARIABLES
-        ========================================
-        */
+        /* --- CORE VARIABLES --- */
         :root {
-            --bg: #050505;
-            --hex-dark: #000000;
-            --hex-light: #ffffff;
-            --hex-dim: #333333;
-            --hex-grid: rgba(255, 255, 255, 0.05);
-            --primary-font: 'Share Tech Mono', monospace;
-            --header-font: 'Orbitron', sans-serif;
-            --scan-speed: 6s;
-            --border-width: 1px;
+            --bg: #000000;
+            --fg: #ffffff;
+            --dim: #222222;
+            --mid: #444444;
+            --accent: #ffffff;
+            --font-main: 'Share Tech Mono', monospace;
+            --font-head: 'Syncopate', sans-serif;
+            --font-ui: 'Rajdhani', sans-serif;
+            --anim-speed: 0.3s;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            cursor: none !important; /* REPLACING SYSTEM CURSOR */
+            cursor: none; /* Custom Cursor Active */
             user-select: none;
         }
 
         body {
-            background-color: var(--hex-dark);
-            color: var(--hex-light);
-            font-family: var(--primary-font);
+            background-color: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-main);
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            perspective: 1000px;
         }
 
-        /* 
-        ========================================
-        CUSTOM CURSOR SYSTEM
-        ========================================
-        */
-        #cursor-system {
+        /* --- CUSTOM CURSOR --- */
+        #cursor-host {
             position: fixed;
             top: 0; left: 0;
+            z-index: 999999;
             pointer-events: none;
-            z-index: 100000;
-            mix-blend-mode: exclusion;
+            mix-blend-mode: difference;
         }
-        .cursor-dot {
+        .c-dot {
+            width: 6px; height: 6px;
+            background: var(--fg);
             position: absolute;
-            width: 4px; height: 4px;
-            background: white;
-            border-radius: 50%;
             transform: translate(-50%, -50%);
+            border-radius: 50%;
         }
-        .cursor-ring {
-            position: absolute;
+        .c-circle {
             width: 40px; height: 40px;
-            border: 1px solid white;
-            border-radius: 50%;
+            border: 1px solid var(--fg);
+            position: absolute;
             transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s;
+            border-radius: 50%;
+            transition: width 0.2s, height 0.2s, border-color 0.2s;
         }
-        .cursor-crosshair {
-            position: absolute;
-            width: 100vw; height: 1px;
-            background: rgba(255,255,255,0.1);
-            top: 0; left: -50vw; /* Center handled by JS */
-        }
-        .cursor-crosshair-v {
-            position: absolute;
-            height: 100vh; width: 1px;
-            background: rgba(255,255,255,0.1);
-            top: -50vh; left: 0;
-        }
-
-        /* Active State for Cursor */
-        body.hover-active .cursor-ring {
-            width: 80px; height: 80px;
-            border-style: dashed;
+        /* Hover State */
+        body.is-hovering .c-circle {
+            width: 60px; height: 60px;
+            border: 2px dashed var(--fg);
             animation: spin 4s linear infinite;
-            background: rgba(255,255,255,0.05);
         }
 
-        /* 
-        ========================================
-        VISUAL FX LAYERS
-        ========================================
-        */
-        .noise-layer {
-            position: fixed;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIj48ZmlsdGVyIGlkPSJnoiPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIwLjY1IiBudW1PY3RhdmVzPSIzIiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI2cpIiBvcGFjaXR5PSIwLjA1Ii8+PC9zdmc+');
-            animation: noiseShift 0.2s infinite;
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        .scan-line {
-            position: fixed;
-            left: 0; top: 0;
-            width: 100%; height: 2px;
-            background: rgba(255,255,255,0.3);
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
-            animation: scan var(--scan-speed) linear infinite;
-            z-index: 998;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .vignette {
-            position: fixed;
-            width: 100%; height: 100%;
-            background: radial-gradient(circle at center, transparent 50%, black 100%);
-            z-index: 997;
-            pointer-events: none;
-        }
-
-        /* 3D GRID BACKGROUND */
-        #grid-canvas {
+        /* --- BACKGROUND FX --- */
+        #matrix-canvas {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: -1;
-            opacity: 0.4;
+            opacity: 0.3;
+        }
+        .scanline-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0),
+                rgba(0,0,0,0) 1px,
+                rgba(255,255,255,0.03) 2px,
+                rgba(255,255,255,0.03) 3px
+            );
+            pointer-events: none;
+            z-index: 900;
         }
 
-        /* 
-        ========================================
-        UI ARCHITECTURE
-        ========================================
-        */
-        .layout-grid {
+        /* --- LAYOUT GRID --- */
+        .main-grid {
             display: grid;
-            grid-template-columns: 250px 1fr 300px;
+            grid-template-columns: 300px 1fr 300px;
             grid-template-rows: 80px 1fr 60px;
             height: 100vh;
-            width: 100vw;
-            position: relative;
-            z-index: 100;
-            opacity: 0; /* Start Hidden for Boot Sequence */
-        }
-
-        /* --- HEADER --- */
-        .top-bar {
-            grid-column: 1 / -1;
-            border-bottom: 1px solid var(--hex-dim);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 30px;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
+            opacity: 0; /* Wait for boot */
         }
         
-        .brand-box {
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            border-bottom: 1px solid var(--dim);
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: space-between;
+            padding: 0 30px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
         }
-        .brand-logo {
-            font-family: var(--header-font);
+        .logo-text {
+            font-family: var(--font-head);
             font-size: 2rem;
-            font-weight: 900;
-            letter-spacing: -2px;
+            letter-spacing: -1px;
             position: relative;
         }
-        .brand-logo::after {
-            content: '_V3.0';
-            font-size: 0.8rem;
+        .logo-text::before {
+            content: attr(data-text);
             position: absolute;
-            top: 0; right: -40px;
-            opacity: 0.7;
+            left: 2px; top: 0;
+            color: rgba(255,255,255,0.5);
+            mix-blend-mode: overlay;
+            animation: glitch 2s infinite reverse;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+        }
+        .logo-text::after {
+            content: attr(data-text);
+            position: absolute;
+            left: -2px; top: 0;
+            color: rgba(255,255,255,0.5);
+            mix-blend-mode: overlay;
+            animation: glitch 3s infinite;
+            clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%);
         }
 
-        /* --- SIDEBAR (LEFT) --- */
-        .sidebar-left {
-            border-right: 1px solid var(--hex-dim);
+        /* Sidebar Info */
+        .sidebar {
             padding: 20px;
+            border-right: 1px solid var(--dim);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 20px;
             background: rgba(0,0,0,0.4);
         }
-
-        .sys-info-block {
-            font-size: 0.7rem;
-            line-height: 1.6;
-            color: #888;
+        .data-block {
+            border: 1px solid var(--dim);
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
         }
-        .sys-val { color: #fff; }
+        .data-block::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 2px; height: 100%;
+            background: var(--fg);
+        }
+        .data-label {
+            font-size: 0.7rem;
+            color: #888;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .data-val {
+            font-size: 1.2rem;
+            font-family: var(--font-ui);
+            font-weight: 700;
+        }
 
-        /* --- MAIN STAGE (CENTER) --- */
-        .main-stage {
+        /* Main Stage */
+        .stage {
             position: relative;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 40px;
-            overflow: hidden;
+            perspective: 1000px;
         }
 
-        /* UPLOAD WIDGET */
-        .upload-widget {
-            width: 100%;
-            max-width: 600px;
+        /* Upload Box */
+        .upload-zone {
+            width: 600px;
             height: 300px;
-            border: 1px dashed var(--hex-dim);
+            border: 1px dashed var(--mid);
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
-            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            align-items: center;
+            transition: 0.3s;
+            background: rgba(10,10,10,0.5);
             position: relative;
-            background: rgba(0,0,0,0.5);
         }
-        .upload-widget:hover {
-            border-color: #fff;
-            box-shadow: 0 0 30px rgba(255,255,255,0.05);
+        .upload-zone:hover {
+            border-color: var(--fg);
+            box-shadow: 0 0 30px rgba(255,255,255,0.1);
             transform: scale(1.02);
         }
-        .upload-widget::before {
-            content: '';
-            position: absolute;
-            top: -1px; left: -1px; right: -1px; bottom: -1px;
-            border: 1px solid transparent;
-        }
-        .upload-widget:hover::before {
-            animation: borderSnake 2s linear infinite;
-        }
 
-        /* VIDEO PLAYER CONTAINER */
-        .video-hud {
-            display: none; /* Hidden until upload */
+        /* Video Interface */
+        .vid-container {
+            display: none; /* Hidden initially */
             width: 100%;
             height: 100%;
             flex-direction: column;
-            border: 1px solid var(--hex-dim);
-            background: #000;
             position: relative;
+            border: 1px solid var(--dim);
+            background: #000;
         }
         
-        /* DECORATIVE CORNERS */
-        .corner-bracket {
+        /* Holographic Border Animation */
+        .vid-container::after {
+            content: '';
             position: absolute;
-            width: 20px; height: 20px;
-            border-color: #fff;
-            border-style: solid;
-            pointer-events: none;
-        }
-        .cb-tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
-        .cb-tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
-        .cb-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
-        .cb-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-
-        video {
-            width: 100%;
-            height: auto;
-            max-height: 60vh;
-            object-fit: contain;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, #fff, transparent, #fff);
+            z-index: -1;
+            background-size: 400% 400%;
+            animation: borderFlow 10s ease infinite;
+            opacity: 0.5;
         }
 
-        /* CONTROLS AREA */
-        .control-deck {
-            padding: 20px;
-            border-top: 1px solid var(--hex-dim);
-            background: rgba(10,10,10,0.9);
-        }
-
-        /* SLIDER TIMELINE */
-        .timeline-wrapper {
+        .video-wrapper {
+            flex: 1;
             position: relative;
-            width: 100%;
-            height: 40px;
+            overflow: hidden;
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
+            justify-content: center;
         }
-        .timeline-track {
-            width: 100%;
-            height: 2px;
-            background: var(--hex-dim);
+        video {
+            max-width: 100%;
+            max-height: 55vh;
+            display: block;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        /* Scanner Line (Visual) */
+        .scanner-line {
+            position: absolute;
+            top: 0; left: 50%;
+            width: 2px; height: 100%;
+            background: rgba(255,255,255,0.5);
+            box-shadow: 0 0 15px white;
+            z-index: 10;
+            pointer-events: none;
+            animation: scanLR 3s ease-in-out infinite;
+            display: none; /* Show on pause */
+        }
+
+        /* Controls */
+        .control-panel {
+            background: rgba(20,20,20,0.95);
+            border-top: 1px solid var(--dim);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Slider */
+        .seek-wrap {
             position: relative;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            cursor: none;
         }
-        .timeline-progress {
+        .track {
+            width: 100%;
+            height: 4px;
+            background: var(--dim);
+            position: relative;
+            overflow: hidden;
+        }
+        .fill {
             height: 100%;
-            background: #fff;
+            background: var(--fg);
             width: 0%;
             position: absolute;
             top: 0; left: 0;
         }
+        /* The range input is invisible but sits on top to capture events */
         input[type="range"] {
             position: absolute;
-            width: 100%;
-            height: 40px;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             opacity: 0;
-            z-index: 10;
+            z-index: 20;
             cursor: none;
         }
-        .thumb-indicator {
-            width: 4px; height: 20px;
-            background: #fff;
+        .thumb {
             position: absolute;
-            top: -9px;
-            transform: translateX(-50%);
-            pointer-events: none;
+            width: 10px; height: 20px;
+            background: #fff;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 15;
             box-shadow: 0 0 10px #fff;
+            pointer-events: none;
         }
 
-        /* BUTTONS */
-        .action-bar {
+        /* Buttons */
+        .btn-row {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-        .cyber-btn {
+        .btn {
             background: transparent;
-            border: 1px solid var(--hex-dim);
-            color: #fff;
-            padding: 12px 25px;
-            font-family: var(--header-font);
+            border: 1px solid var(--mid);
+            color: var(--fg);
+            font-family: var(--font-ui);
+            font-weight: 700;
             text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 2px;
+            padding: 10px 20px;
+            transition: 0.2s;
             position: relative;
             overflow: hidden;
-            transition: 0.3s;
+            font-size: 0.9rem;
         }
-        .cyber-btn:hover {
-            border-color: #fff;
-            background: rgba(255,255,255,0.1);
-            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        /* Button Hover Fill Effect */
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 0%; height: 100%;
+            background: var(--fg);
+            transition: 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: -1;
         }
-        .cyber-btn:active {
-            background: #fff;
-            color: #000;
+        .btn:hover {
+            color: var(--bg);
+            border-color: var(--fg);
         }
-        
-        /* FRAME STEPPER */
-        .stepper-group {
-            display: flex;
-            gap: 5px;
-            margin-right: auto;
+        .btn:hover::before {
+            width: 100%;
         }
-        .step-btn {
-            width: 40px;
-            padding: 10px 0;
-            text-align: center;
+        .btn-extract {
+            margin-left: auto;
+            border: 1px solid var(--fg);
+            box-shadow: 0 0 10px rgba(255,255,255,0.1);
         }
 
-        /* --- SIDEBAR (RIGHT) - TERMINAL --- */
-        .sidebar-right {
-            border-left: 1px solid var(--hex-dim);
+        /* Logs */
+        .log-panel {
+            grid-column: 3;
+            border-left: 1px solid var(--dim);
             background: rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
+            padding: 0;
         }
-        .terminal-header {
+        .log-head {
             padding: 15px;
-            background: var(--hex-dim);
-            font-family: var(--header-font);
+            background: var(--dim);
             font-size: 0.8rem;
+            font-weight: bold;
             letter-spacing: 1px;
         }
-        #terminal-log {
-            flex: 1;
+        #log-content {
             padding: 15px;
-            font-size: 0.7rem;
-            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
             color: #aaa;
+            flex: 1;
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            font-family: 'Share Tech Mono', monospace;
         }
-        .log-entry {
-            animation: fadeIn 0.3s ease;
+        .log-line {
+            margin-bottom: 6px;
+            animation: slideIn 0.2s ease-out;
         }
         .log-success { color: #fff; text-shadow: 0 0 5px #fff; }
-        .log-warn { color: #aaa; font-style: italic; }
 
-        /* --- FOOTER --- */
-        .footer-bar {
+        /* Footer */
+        .footer {
             grid-column: 1 / -1;
-            border-top: 1px solid var(--hex-dim);
+            border-top: 1px solid var(--dim);
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
             padding: 0 30px;
-            background: #000;
-            z-index: 200;
+            background: #050505;
         }
-        
-        .social-dock {
+        .socials {
             display: flex;
-            gap: 30px;
+            gap: 20px;
         }
-        .social-link {
+        .s-link {
+            color: #888;
+            text-decoration: none;
+            font-size: 0.8rem;
             display: flex;
             align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: #888;
-            text-transform: uppercase;
-            font-size: 0.8rem;
+            gap: 8px;
             transition: 0.3s;
         }
-        .social-link:hover {
+        .s-link:hover {
             color: #fff;
-            text-shadow: 0 0 8px rgba(255,255,255,0.6);
+            text-shadow: 0 0 10px #fff;
         }
-        .social-icon {
-            width: 20px; height: 20px;
-            fill: currentColor;
-        }
-
-        /* 
-        ========================================
-        LOADING SEQUENCE (BIOS BOOT)
-        ========================================
-        */
-        #bios-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #000;
-            z-index: 99999;
-            padding: 50px;
-            font-family: 'Share Tech Mono', monospace;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-        }
-        .bios-text {
-            margin-bottom: 5px;
-            font-size: 1rem;
-        }
-        .blink { animation: blinker 0.1s infinite; }
 
         /* ANIMATIONS */
-        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes noiseShift { 0% { transform: translate(0,0); } 100% { transform: translate(-10px, 10px); } }
-        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
-        @keyframes blinker { 50% { opacity: 0; } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes spin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
+        @keyframes glitch { 
+            0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); transform: translate(2px,0); }
+            10% { clip-path: polygon(0 15%, 100% 15%, 100% 15%, 0 15%); transform: translate(-2px,0); }
+            20% { clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%); transform: translate(2px,0); }
+            100% { clip-path: polygon(0 0, 0 0, 0 0, 0 0); transform: translate(0,0); }
+        }
+        @keyframes borderFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes scanLR { 0%,100% { left: 10%; opacity:0; } 10% { opacity:1;} 50% { left: 90%; } 90% { opacity:1; } }
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes bootFade { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
         .hidden { display: none !important; }
-        .fade-in-layout { animation: layoutReveal 1s forwards ease-out; }
-        @keyframes layoutReveal { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+        .reveal { animation: bootFade 1s forwards ease-in-out; }
 
     </style>
 </head>
 <body>
 
-    <!-- AUDIO FX (Visual Only Concept) -->
-    <div class="noise-layer"></div>
-    <div class="scan-line"></div>
-    <div class="vignette"></div>
-    <canvas id="grid-canvas"></canvas>
+    <!-- BACKGROUND FX -->
+    <canvas id="matrix-canvas"></canvas>
+    <div class="scanline-overlay"></div>
 
-    <!-- MOUSE TRACKER -->
-    <div id="cursor-system">
-        <div class="cursor-crosshair"></div>
-        <div class="cursor-crosshair-v"></div>
-        <div class="cursor-ring"></div>
-        <div class="cursor-dot"></div>
+    <!-- CUSTOM CURSOR -->
+    <div id="cursor-host">
+        <div class="c-dot"></div>
+        <div class="c-circle"></div>
     </div>
 
-    <!-- BIOS BOOT SCREEN -->
-    <div id="bios-screen">
-        <div id="bios-log"></div>
-    </div>
-
-    <!-- MAIN UI LAYOUT -->
-    <div class="layout-grid hidden" id="main-layout">
+    <!-- MAIN LAYOUT -->
+    <div class="main-grid hidden" id="app-grid">
         
         <!-- HEADER -->
-        <div class="top-bar">
-            <div class="brand-box hover-target">
-                <div class="brand-logo glitch-hover" data-text="MEXTRACT">MEXTRACT</div>
-            </div>
-            <div style="text-align: right; font-size: 0.8rem;">
-                <div id="clock">00:00:00:00</div>
-                <div style="color: #666;">SECURE CONNECTION // PROTOCOL 443</div>
+        <div class="header">
+            <div class="logo-text hover-effect" data-text="MEXTRACT">MEXTRACT</div>
+            <div style="text-align: right; font-size: 0.7rem; color: #666;">
+                <div id="sys-time">00:00:00</div>
+                <div>PROTOCOL V4 // HYPER-FLUID</div>
             </div>
         </div>
 
-        <!-- SIDEBAR LEFT (STATS) -->
-        <div class="sidebar-left">
-            <div>
-                <div class="terminal-header" style="background: transparent; padding: 0; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;">SYSTEM STATUS</div>
-                <div class="sys-info-block">
-                    CPU LOAD: <span class="sys-val" id="cpu-load">12%</span><br>
-                    MEMORY: <span class="sys-val" id="mem-load">4096 MB</span><br>
-                    GPU ACCEL: <span class="sys-val">ENABLED</span><br>
-                    RENDERER: <span class="sys-val">CANVAS 2D</span>
-                </div>
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="data-block hover-effect">
+                <span class="data-label">RENDER ENGINE</span>
+                <span class="data-val text-scramble">CANVAS 2D</span>
             </div>
-            
-            <div style="margin-bottom: 20px;">
-                <div class="terminal-header" style="background: transparent; padding: 0; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">MOUSE COORDS</div>
-                <div class="sys-info-block">
-                    X: <span class="sys-val" id="mouse-x">000</span><br>
-                    Y: <span class="sys-val" id="mouse-y">000</span>
-                </div>
+            <div class="data-block hover-effect">
+                <span class="data-label">INPUT SOURCE</span>
+                <span class="data-val text-scramble" id="status-input">WAITING...</span>
+            </div>
+            <div class="data-block hover-effect">
+                <span class="data-label">MEMORY ALLOC</span>
+                <span class="data-val" id="mem-val">2048 MB</span>
             </div>
         </div>
 
         <!-- MAIN STAGE -->
-        <div class="main-stage">
+        <div class="stage">
             
-            <!-- UPLOAD COMPONENT -->
-            <div class="upload-widget hover-target" id="drop-zone">
-                <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
-                <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
-                
-                <h2 style="font-family: 'Orbitron'; margin-bottom: 10px;">INITIATE UPLOAD</h2>
-                <p style="color: #888; font-size: 0.8rem;">[ DRAG VIDEO FILE OR CLICK ]</p>
-                <input type="file" id="file-input" accept="video/*" style="display:none;">
+            <!-- UPLOAD -->
+            <div class="upload-zone hover-effect" id="drop-area">
+                <div style="font-size: 3rem; font-weight: 100;">+</div>
+                <div style="margin-top: 10px; letter-spacing: 2px;">DRAG VIDEO SOURCE</div>
+                <div style="margin-top: 5px; font-size: 0.7rem; color: #666;">MP4 / MOV / WEBM</div>
+                <input type="file" id="file-in" accept="video/*" hidden>
             </div>
 
-            <!-- VIDEO COMPONENT -->
-            <div class="video-hud" id="video-interface">
-                <div class="corner-bracket cb-tl"></div><div class="corner-bracket cb-tr"></div>
-                <div class="corner-bracket cb-bl"></div><div class="corner-bracket cb-br"></div>
-
-                <!-- Canvas for Video Rendering -->
-                <div style="flex: 1; display: flex; align-items: center; justify-content: center; background: black; overflow: hidden; position: relative;">
-                    <video id="main-video" playsinline muted></video>
-                    <div style="position: absolute; top: 20px; left: 20px; font-size: 0.7rem; color: rgba(255,255,255,0.5);">
-                        RES: <span id="vid-res">0x0</span><br>
-                        DUR: <span id="vid-dur">00s</span>
-                    </div>
+            <!-- VIDEO PLAYER HUD -->
+            <div class="vid-container" id="vid-ui">
+                <div class="video-wrapper">
+                    <div class="scanner-line" id="scanner"></div>
+                    <video id="main-vid" playsinline muted></video>
                 </div>
-
-                <!-- CONTROLS -->
-                <div class="control-deck">
-                    <div class="timeline-wrapper hover-target">
-                        <div class="timeline-track">
-                            <div class="timeline-progress" id="progress-bar"></div>
-                            <div class="thumb-indicator" id="thumb"></div>
+                
+                <div class="control-panel">
+                    
+                    <!-- SMOOTH SLIDER -->
+                    <div class="seek-wrap hover-effect">
+                        <div class="track">
+                            <div class="fill" id="seek-fill"></div>
                         </div>
-                        <input type="range" id="seek-slider" min="0" value="0" step="0.001">
+                        <div class="thumb" id="seek-thumb"></div>
+                        <input type="range" id="seek-bar" min="0" value="0" step="0.001">
                     </div>
 
-                    <div class="action-bar">
-                        <div class="stepper-group">
-                            <button class="cyber-btn step-btn hover-target" id="step-back">&lt;</button>
-                            <button class="cyber-btn hover-target" id="play-btn">PLAY/PAUSE</button>
-                            <button class="cyber-btn step-btn hover-target" id="step-fwd">&gt;</button>
+                    <!-- CONTROLS ROW -->
+                    <div class="btn-row">
+                        <!-- FRAME STEPPER -->
+                        <button class="btn hover-effect" id="frame-back" style="padding: 10px 15px;">
+                            &lt; FRAME
+                        </button>
+                        
+                        <button class="btn hover-effect" id="btn-play" style="width: 120px;">
+                            PLAY
+                        </button>
+                        
+                        <button class="btn hover-effect" id="frame-fwd" style="padding: 10px 15px;">
+                            FRAME &gt;
+                        </button>
+
+                        <!-- TIMECODE -->
+                        <div style="font-family: 'Share Tech Mono'; margin-left: 15px; font-size: 1.1rem;" id="time-code">
+                            00:00.00
                         </div>
-                        
-                        <div style="font-family: 'Share Tech Mono'; font-size: 1.2rem; margin-right: 20px;" id="time-display">00.00.00</div>
-                        
-                        <button class="cyber-btn hover-target" id="extract-btn" style="border-color: #fff; font-weight: bold;">
-                            [ EXECUTE EXTRACT ]
+
+                        <!-- EXTRACT BUTTON -->
+                        <button class="btn btn-extract hover-effect" id="btn-extract">
+                            [ EXTRACT LOSSLESS ]
                         </button>
                     </div>
                 </div>
@@ -573,363 +519,262 @@
 
         </div>
 
-        <!-- RIGHT SIDEBAR (TERMINAL) -->
-        <div class="sidebar-right">
-            <div class="terminal-header">>> EVENT_LOG</div>
-            <div id="terminal-log">
-                <div class="log-entry">> KERNEL INITIALIZED...</div>
-                <div class="log-entry">> WAITING FOR INPUT...</div>
+        <!-- LOGS -->
+        <div class="log-panel">
+            <div class="log-head">SYSTEM_LOG</div>
+            <div id="log-content">
+                <div class="log-line">> INITIALIZING KERNEL...</div>
+                <div class="log-line">> VISUAL INTERFACE LOADED.</div>
             </div>
         </div>
 
         <!-- FOOTER -->
-        <div class="footer-bar">
-            <div style="font-size: 0.7rem; color: #555;">
-                MAXFLUX AI INDUSTRIES // EST 2025
-            </div>
-            
-            <div class="social-dock">
-                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="social-link hover-target">
-                    <svg class="social-icon" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                    </svg>
-                    @maxfluxai
+        <div class="footer">
+            <div style="font-size: 0.7rem; opacity: 0.5;">MAXFLUX AI LABS © 2025</div>
+            <div class="socials">
+                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="s-link hover-effect">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg> @maxfluxai
                 </a>
-                <a href="https://www.x.com/maxfluxai" target="_blank" class="social-link hover-target">
-                    <svg class="social-icon" viewBox="0 0 24 24">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
-                    @maxfluxai
+                <a href="https://www.x.com/maxfluxai" target="_blank" class="s-link hover-effect">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> @maxfluxai
                 </a>
             </div>
         </div>
 
     </div>
-    
-    <!-- HIDDEN CANVAS FOR PROCESSING -->
+
+    <!-- PROCESSING CANVAS -->
     <canvas id="proc-canvas" class="hidden"></canvas>
 
     <script>
-        /* 
-        ========================================
-        SYSTEM KERNEL (JAVASCRIPT)
-        ========================================
-        */
+        /* --- 1. SYSTEM BOOT & UI ANIMATION --- */
+        window.addEventListener('load', () => {
+            const app = document.getElementById('app-grid');
+            setTimeout(() => {
+                app.classList.remove('hidden');
+                app.classList.add('reveal');
+                log('SYSTEM ONLINE.');
+                initRain();
+            }, 800);
+        });
 
-        // --- CLASS: TERMINAL LOGGER ---
-        class Terminal {
-            constructor(elementId) {
-                this.el = document.getElementById(elementId);
-            }
-            log(msg, type = 'info') {
-                const div = document.createElement('div');
-                div.className = 'log-entry';
-                
-                const time = new Date().toLocaleTimeString('en-US', {hour12: false});
-                if(type === 'success') div.classList.add('log-success');
-                if(type === 'warn') div.classList.add('log-warn');
-                
-                div.innerHTML = `[${time}] > ${msg}`;
-                this.el.appendChild(div);
-                this.el.scrollTop = this.el.scrollHeight;
-            }
-        }
-        const term = new Terminal('terminal-log');
+        // Cursor Logic
+        const cursorHost = document.getElementById('cursor-host');
+        document.addEventListener('mousemove', e => {
+            cursorHost.style.left = e.clientX + 'px';
+            cursorHost.style.top = e.clientY + 'px';
+        });
+        document.querySelectorAll('.hover-effect').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('is-hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('is-hovering'));
+        });
 
-        // --- BOOT SEQUENCE ---
-        const bootText = [
-            "INITIALIZING MAXFLUX_OS v3.1...",
-            "LOADING MEMORY MODULES... OK",
-            "CHECKING GPU ACCELERATION... DETECTED",
-            "MOUNTING VIRTUAL FILE SYSTEM... OK",
-            "ESTABLISHING NEURAL LINK... OK",
-            "WELCOME USER."
-        ];
+        // Text Scramble Effect
+        const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@%';
+        document.querySelectorAll('.text-scramble').forEach(el => {
+            el.addEventListener('mouseover', () => {
+                let original = el.innerText;
+                let i = 0;
+                let interval = setInterval(() => {
+                    el.innerText = original.split('').map((char, idx) => {
+                        if(idx < i) return original[idx];
+                        return scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
+                    }).join('');
+                    if(i >= original.length) clearInterval(interval);
+                    i += 1/2;
+                }, 30);
+            });
+        });
 
-        const biosLog = document.getElementById('bios-log');
-        const biosScreen = document.getElementById('bios-screen');
-        const mainLayout = document.getElementById('main-layout');
-        let bootIndex = 0;
+        // Clock
+        setInterval(() => {
+            document.getElementById('sys-time').innerText = new Date().toLocaleTimeString('en-GB');
+            if(Math.random() > 0.9) document.getElementById('mem-val').innerText = (Math.random() * 2000 + 1000).toFixed(0) + " MB";
+        }, 1000);
 
-        function runBoot() {
-            if(bootIndex < bootText.length) {
-                const p = document.createElement('div');
-                p.className = 'bios-text';
-                p.innerText = bootText[bootIndex];
-                biosLog.appendChild(p);
-                bootIndex++;
-                setTimeout(runBoot, 300); // Fast boot
-            } else {
-                const cursor = document.createElement('span');
-                cursor.className = 'blink';
-                cursor.innerText = '_';
-                biosLog.appendChild(cursor);
-                
-                setTimeout(() => {
-                    biosScreen.classList.add('hidden');
-                    mainLayout.classList.remove('hidden');
-                    mainLayout.classList.add('fade-in-layout');
-                    term.log("SYSTEM READY.");
-                    initMatrixGrid(); // Start background
-                }, 1000);
-            }
-        }
-        window.onload = runBoot;
 
-        // --- MATRIX 3D GRID BACKGROUND ---
-        function initMatrixGrid() {
-            const canvas = document.getElementById('grid-canvas');
+        /* --- 2. BACKGROUND RAIN (MATRIX LITE) --- */
+        function initRain() {
+            const canvas = document.getElementById('matrix-canvas');
             const ctx = canvas.getContext('2d');
-            let width, height;
-            
-            function resize() {
-                width = window.innerWidth;
-                height = window.innerHeight;
-                canvas.width = width;
-                canvas.height = height;
-            }
+            let w, h;
+            const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
             window.addEventListener('resize', resize);
             resize();
 
-            let offset = 0;
-            
-            function draw() {
-                ctx.fillStyle = '#050505';
-                ctx.fillRect(0, 0, width, height);
-                
-                // Horizon line
-                const horizon = height * 0.4;
-                
-                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                ctx.lineWidth = 1;
-                
-                // Vertical lines (Perspective)
-                for(let i = -width; i < width * 2; i += 50) {
-                    ctx.beginPath();
-                    ctx.moveTo(i, height);
-                    ctx.lineTo(width/2, horizon); // Vanishing point
-                    ctx.stroke();
-                }
-                
-                // Horizontal lines (Moving)
-                offset = (offset + 0.5) % 40;
-                for(let y = horizon; y < height; y += 40 * (y/horizon)) { // Nonlinear spacing
-                    let drawY = y + offset * (y/height); // movement effect
-                    if(drawY > height) drawY -= (height - horizon);
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(0, drawY);
-                    ctx.lineTo(width, drawY);
-                    ctx.stroke();
-                }
-                
-                // Random Glitch Rect
-                if(Math.random() > 0.95) {
-                    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-                    const h = Math.random() * 20;
-                    const y = Math.random() * height;
-                    ctx.fillRect(0, y, width, h);
-                }
+            const cols = Math.floor(w / 20);
+            const ypos = Array(cols).fill(0);
 
+            function draw() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '12px monospace';
+
+                ypos.forEach((y, ind) => {
+                    const text = String.fromCharCode(Math.random() * 128);
+                    const x = ind * 20;
+                    ctx.fillText(text, x, y);
+                    if (y > h && Math.random() > 0.975) ypos[ind] = 0;
+                    else ypos[ind] = y + 20;
+                });
                 requestAnimationFrame(draw);
             }
             draw();
         }
 
-        // --- MOUSE TRACKING SYSTEM ---
-        const cursorSys = document.getElementById('cursor-system');
-        const cursorRing = document.querySelector('.cursor-ring');
-        const cursorDot = document.querySelector('.cursor-dot');
-        const crossH = document.querySelector('.cursor-crosshair');
-        const crossV = document.querySelector('.cursor-crosshair-v');
-        const coordX = document.getElementById('mouse-x');
-        const coordY = document.getElementById('mouse-y');
-        
-        document.addEventListener('mousemove', (e) => {
-            cursorSys.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-            
-            coordX.innerText = e.clientX.toString().padStart(4, '0');
-            coordY.innerText = e.clientY.toString().padStart(4, '0');
-        });
 
-        // Hover Effects
-        document.querySelectorAll('.hover-target').forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
-        });
+        /* --- 3. VIDEO ENGINE (OPTIMIZED) --- */
+        const video = document.getElementById('main-vid');
+        const fileIn = document.getElementById('file-in');
+        const dropArea = document.getElementById('drop-area');
+        const vidUI = document.getElementById('vid-ui');
+        const seekBar = document.getElementById('seek-bar');
+        const seekFill = document.getElementById('seek-fill');
+        const seekThumb = document.getElementById('seek-thumb');
+        const timeCode = document.getElementById('time-code');
+        const btnPlay = document.getElementById('btn-play');
+        const scanner = document.getElementById('scanner');
 
-        // --- CLOCK ---
-        setInterval(() => {
-            const now = new Date();
-            const ms = Math.floor(now.getMilliseconds() / 10);
-            document.getElementById('clock').innerText = 
-                now.toLocaleTimeString('en-GB') + ':' + ms.toString().padStart(2, '0');
-            
-            // CPU Randomizer
-            if(Math.random() > 0.5) {
-                document.getElementById('cpu-load').innerText = Math.floor(Math.random() * 30 + 10) + "%";
-            }
-        }, 100);
+        // Log Helper
+        function log(msg, type) {
+            const box = document.getElementById('log-content');
+            const div = document.createElement('div');
+            div.className = 'log-line' + (type ? ' log-success' : '');
+            div.innerText = `> ${msg}`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
 
+        // Upload
+        dropArea.addEventListener('click', () => fileIn.click());
+        dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = '#fff'; });
+        dropArea.addEventListener('dragleave', () => dropArea.style.borderColor = '');
+        dropArea.addEventListener('drop', e => { e.preventDefault(); loadVideo(e.dataTransfer.files[0]); });
+        fileIn.addEventListener('change', e => loadVideo(e.target.files[0]));
 
-        // --- VIDEO CONTROLLER CORE ---
-        const fileInput = document.getElementById('file-input');
-        const dropZone = document.getElementById('drop-zone');
-        const videoInterface = document.getElementById('video-interface');
-        const video = document.getElementById('main-video');
-        const slider = document.getElementById('seek-slider');
-        const progressBar = document.getElementById('progress-bar');
-        const thumb = document.getElementById('thumb');
-        const timeDisplay = document.getElementById('time-display');
-        const playBtn = document.getElementById('play-btn');
-        const extractBtn = document.getElementById('extract-btn');
-        
-        // Upload Handling
-        dropZone.addEventListener('click', () => fileInput.click());
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.style.borderColor = '#fff';
-        });
-        dropZone.addEventListener('dragleave', () => dropZone.style.borderColor = '');
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            handleFile(e.dataTransfer.files[0]);
-        });
-        
-        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-
-        function handleFile(file) {
-            if(!file || !file.type.startsWith('video/')) {
-                term.log("ERROR: INVALID FILE TYPE", "warn");
-                return;
-            }
-
-            term.log(`LOADING: ${file.name}`);
+        function loadVideo(file) {
+            if(!file || !file.type.startsWith('video')) return;
             const url = URL.createObjectURL(file);
             video.src = url;
-            
             video.onloadedmetadata = () => {
-                dropZone.classList.add('hidden');
-                videoInterface.style.display = 'flex';
-                
-                slider.max = video.duration;
-                document.getElementById('vid-res').innerText = `${video.videoWidth}x${video.videoHeight}`;
-                document.getElementById('vid-dur').innerText = video.duration.toFixed(2) + "s";
-                
-                term.log("METADATA PARSED. INTERFACE UNLOCKED.", "success");
+                dropArea.classList.add('hidden');
+                vidUI.style.display = 'flex';
+                vidUI.classList.add('reveal');
+                seekBar.max = video.duration;
+                document.getElementById('status-input').innerText = "VIDEO_LOADED";
+                log(`FILE LOADED: ${file.name}`, true);
             };
         }
 
+        // --- ZERO LAG SEEKING ---
+        let isDragging = false;
+        
+        // Update UI Loop (Runs every frame)
+        function updateLoop() {
+            if (!isDragging) {
+                // Update slider visuals if video is playing normally
+                const pct = (video.currentTime / video.duration) * 100 || 0;
+                seekFill.style.width = pct + "%";
+                seekThumb.style.left = pct + "%";
+                if(document.activeElement !== seekBar) seekBar.value = video.currentTime;
+            }
+            
+            // Update timecode
+            const m = Math.floor(video.currentTime / 60).toString().padStart(2,'0');
+            const s = Math.floor(video.currentTime % 60).toString().padStart(2,'0');
+            const ms = Math.floor((video.currentTime % 1) * 100).toString().padStart(2,'0');
+            timeCode.innerText = `${m}:${s}.${ms}`;
+
+            requestAnimationFrame(updateLoop);
+        }
+        requestAnimationFrame(updateLoop);
+
+        // Slider Interaction (Throttle logic)
+        seekBar.addEventListener('mousedown', () => { isDragging = true; video.pause(); });
+        seekBar.addEventListener('mouseup', () => { isDragging = false; });
+        
+        // The core "No Lag" trick: Use requestAnimationFrame to throttle seek calls
+        let seekTarget = null;
+        seekBar.addEventListener('input', (e) => {
+            isDragging = true;
+            seekTarget = parseFloat(e.target.value);
+            
+            // Visual update immediate
+            const pct = (seekTarget / video.duration) * 100;
+            seekFill.style.width = pct + "%";
+            seekThumb.style.left = pct + "%";
+
+            // Video update throttled
+            requestAnimationFrame(() => {
+                if(seekTarget !== null) {
+                    video.currentTime = seekTarget;
+                    seekTarget = null;
+                }
+            });
+        });
+
         // Play/Pause
-        playBtn.addEventListener('click', () => {
+        btnPlay.addEventListener('click', () => {
             if(video.paused) {
                 video.play();
-                playBtn.innerText = "PAUSE";
-                term.log("PLAYBACK STARTED");
+                btnPlay.innerText = "PAUSE";
+                scanner.style.display = 'none';
+                log("PLAYBACK STARTED");
             } else {
                 video.pause();
-                playBtn.innerText = "PLAY";
-                term.log("PLAYBACK PAUSED");
+                btnPlay.innerText = "PLAY";
+                scanner.style.display = 'block';
+                log("PLAYBACK PAUSED");
             }
         });
 
-        // Slider Logic (The hard part)
-        slider.addEventListener('input', updateVideoFromSlider);
-        
-        function updateVideoFromSlider() {
-            video.currentTime = slider.value;
-            updateUI();
-        }
+        // --- FRAME STEPPER ---
+        const FRAME_TIME = 0.04; // Approx 1 frame at 25fps. Safe default.
 
-        video.addEventListener('timeupdate', () => {
-            if(!slider.matches(':active')) slider.value = video.currentTime;
-            updateUI();
-        });
-
-        function updateUI() {
-            const pct = (video.currentTime / video.duration) * 100;
-            progressBar.style.width = pct + "%";
-            thumb.style.left = pct + "%";
-            
-            // Convert to MM:SS:ms
-            const min = Math.floor(video.currentTime / 60).toString().padStart(2,'0');
-            const sec = Math.floor(video.currentTime % 60).toString().padStart(2,'0');
-            const ms = Math.floor((video.currentTime % 1) * 100).toString().padStart(2,'0');
-            timeDisplay.innerText = `${min}:${sec}.${ms}`;
-        }
-
-        // Step Buttons
-        document.getElementById('step-back').addEventListener('click', () => {
+        document.getElementById('frame-back').addEventListener('click', () => {
             video.pause();
-            video.currentTime = Math.max(0, video.currentTime - 0.04);
-            term.log("STEP REVERSE");
+            video.currentTime = Math.max(0, video.currentTime - FRAME_TIME);
+            btnPlay.innerText = "PLAY";
+            log("FRAME STEP [-]");
         });
-        document.getElementById('step-fwd').addEventListener('click', () => {
+
+        document.getElementById('frame-fwd').addEventListener('click', () => {
             video.pause();
-            video.currentTime = Math.min(video.duration, video.currentTime + 0.04);
-            term.log("STEP FORWARD");
+            video.currentTime = Math.min(video.duration, video.currentTime + FRAME_TIME);
+            btnPlay.innerText = "PLAY";
+            log("FRAME STEP [+]");
         });
 
 
-        // --- EXTRACTION ENGINE ---
-        extractBtn.addEventListener('click', () => {
-            if(video.readyState < 2) {
-                term.log("ERROR: NO VIDEO DATA", "warn");
-                return;
-            }
+        // --- EXTRACTION ---
+        document.getElementById('btn-extract').addEventListener('click', () => {
+            if(video.readyState < 2) return;
 
-            term.log("INITIATING EXTRACTION PROTOCOL...");
-            
-            // 1. Flash Effect
+            // Flash
             const flash = document.createElement('div');
-            flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999999;mix-blend-mode:difference;animation:blinker 0.1s 2;";
+            flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999999;mix-blend-mode:overlay;transition:opacity 0.2s;";
             document.body.appendChild(flash);
-            setTimeout(() => flash.remove(), 200);
+            setTimeout(() => flash.style.opacity = 0, 50);
+            setTimeout(() => flash.remove(), 250);
 
-            // 2. Canvas Processing
-            const pCanvas = document.getElementById('proc-canvas');
-            const pCtx = pCanvas.getContext('2d');
-            
-            pCanvas.width = video.videoWidth;
-            pCanvas.height = video.videoHeight;
-            
-            pCtx.drawImage(video, 0, 0, pCanvas.width, pCanvas.height);
-            
-            // 3. Generate File
+            // Capture
+            const cvs = document.getElementById('proc-canvas');
+            const ctx = cvs.getContext('2d');
+            cvs.width = video.videoWidth;
+            cvs.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, cvs.width, cvs.height);
+
             try {
-                const data = pCanvas.toDataURL('image/png');
+                const data = cvs.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = `MEXTRACT_FRAME_${video.currentTime.toFixed(3)}.png`;
+                link.download = `FRAME_${video.currentTime.toFixed(3)}.png`;
                 link.href = data;
                 link.click();
-                
-                term.log(`FRAME SAVED: ${link.download}`, "success");
-            } catch (e) {
-                term.log("ERROR: CORRUPTED STREAM (CORS)", "warn");
+                log(`FRAME EXTRACTED: ${cvs.width}x${cvs.height}`, true);
+            } catch(e) {
+                log("ERROR: SECURITY PROTOCOL PREVENTED DOWNLOAD");
             }
-        });
-
-        // Glitch Text Effect on Hover
-        const glitchTargets = document.querySelectorAll('.glitch-hover');
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890#@$%&';
-        
-        glitchTargets.forEach(target => {
-            target.addEventListener('mouseover', () => {
-                const original = target.dataset.text;
-                let iter = 0;
-                
-                const interval = setInterval(() => {
-                    target.innerText = original.split('').map((l, i) => {
-                        if(i < iter) return original[i];
-                        return chars[Math.floor(Math.random() * chars.length)];
-                    }).join('');
-                    
-                    if(iter >= original.length) clearInterval(interval);
-                    iter += 1/3;
-                }, 30);
-            });
         });
 
     </script>
