@@ -3,779 +3,780 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MEXTRACT | HYPER_FLUID_V4</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&family=Syncopate:wght@700&display=swap" rel="stylesheet">
-
+    <title>MEXTRACT | SYSTEM CORE X</title>
     <style>
-        /* --- CORE VARIABLES --- */
+        /* 
+        ==========================================================================
+        // 0. CORE KERNEL STYLES
+        ==========================================================================
+        */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;800&family=Syncopate:wght@700&display=swap');
+
         :root {
-            --bg: #000000;
-            --fg: #ffffff;
-            --dim: #222222;
-            --mid: #444444;
-            --accent: #ffffff;
-            --font-main: 'Share Tech Mono', monospace;
-            --font-head: 'Syncopate', sans-serif;
-            --font-ui: 'Rajdhani', sans-serif;
-            --anim-speed: 0.3s;
+            --c-void: #030303;
+            --c-pri: #ffffff;
+            --c-sec: #888888;
+            --c-dim: #222222;
+            --c-acc: #ffffff;
+            --f-mono: 'JetBrains Mono', monospace;
+            --f-head: 'Syncopate', sans-serif;
+            --z-back: -1;
+            --z-ui: 10;
+            --z-win: 20;
+            --z-top: 1000;
+            --crt-flicker: 0.02s;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            cursor: none; /* Custom Cursor Active */
             user-select: none;
+            cursor: none !important; /* SYSTEM CURSOR DISABLED */
+            scrollbar-width: none;
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--fg);
-            font-family: var(--font-main);
+            background-color: var(--c-void);
+            color: var(--c-pri);
+            font-family: var(--f-mono);
             height: 100vh;
             width: 100vw;
             overflow: hidden;
+            position: relative;
         }
 
-        /* --- CUSTOM CURSOR --- */
-        #cursor-host {
+        /* --- CUSTOM CURSOR ENGINE --- */
+        #cursor-layer {
             position: fixed;
             top: 0; left: 0;
-            z-index: 999999;
+            width: 100%; height: 100%;
             pointer-events: none;
+            z-index: var(--z-top);
             mix-blend-mode: difference;
         }
-        .c-dot {
-            width: 6px; height: 6px;
-            background: var(--fg);
+        .cursor-main {
             position: absolute;
+            width: 20px; height: 20px;
+            border: 1px solid var(--c-pri);
             transform: translate(-50%, -50%);
-            border-radius: 50%;
+            transition: width 0.1s, height 0.1s;
         }
-        .c-circle {
+        .cursor-dot {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: var(--c-pri);
+            transform: translate(-50%, -50%);
+        }
+        .cursor-x-line, .cursor-y-line {
+            position: absolute;
+            background: rgba(255,255,255,0.1);
+        }
+        .cursor-x-line { width: 100vw; height: 1px; top: 50%; left: -50vw; }
+        .cursor-y-line { width: 1px; height: 100vh; top: -50vh; left: 50%; }
+        
+        /* Interaction States */
+        body.state-hover .cursor-main {
             width: 40px; height: 40px;
-            border: 1px solid var(--fg);
-            position: absolute;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            transition: width 0.2s, height 0.2s, border-color 0.2s;
-        }
-        /* Hover State */
-        body.is-hovering .c-circle {
-            width: 60px; height: 60px;
-            border: 2px dashed var(--fg);
+            border-style: dashed;
             animation: spin 4s linear infinite;
+            background: rgba(255,255,255,0.05);
+        }
+        body.state-active .cursor-main {
+            width: 10px; height: 10px;
+            background: var(--c-pri);
         }
 
-        /* --- BACKGROUND FX --- */
-        #matrix-canvas {
+        /* --- CANVAS LAYERS --- */
+        .canvas-stack {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: -1;
-            opacity: 0.3;
         }
-        .scanline-overlay {
+        #rain-canvas { z-index: 0; opacity: 0.15; }
+        #ui-fx-canvas { z-index: 1; pointer-events: none; }
+
+        /* --- CRT & POST PROCESSING --- */
+        .post-process {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0,0,0,0),
-                rgba(0,0,0,0) 1px,
-                rgba(255,255,255,0.03) 2px,
-                rgba(255,255,255,0.03) 3px
-            );
             pointer-events: none;
             z-index: 900;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
         }
 
-        /* --- LAYOUT GRID --- */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 300px 1fr 300px;
-            grid-template-rows: 80px 1fr 60px;
-            height: 100vh;
-            opacity: 0; /* Wait for boot */
+        /* --- WINDOW MANAGER SYSTEM --- */
+        .os-window {
+            position: absolute;
+            background: rgba(5, 5, 5, 0.9);
+            border: 1px solid var(--c-dim);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.4s, transform 0.4s, border-color 0.2s;
+            z-index: var(--z-win);
         }
-        
-        /* Header */
-        .header {
-            grid-column: 1 / -1;
-            border-bottom: 1px solid var(--dim);
+        .os-window.active {
+            border-color: var(--c-pri);
+            z-index: var(--z-win) + 1;
+            box-shadow: 0 0 20px rgba(255,255,255,0.05);
+        }
+        .win-header {
+            height: 30px;
+            background: var(--c-dim);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 30px;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
+            padding: 0 10px;
+            cursor: none; /* Logic handled by JS drag */
+            border-bottom: 1px solid var(--c-dim);
         }
-        .logo-text {
-            font-family: var(--font-head);
-            font-size: 2rem;
-            letter-spacing: -1px;
-            position: relative;
-        }
-        .logo-text::before {
-            content: attr(data-text);
-            position: absolute;
-            left: 2px; top: 0;
-            color: rgba(255,255,255,0.5);
-            mix-blend-mode: overlay;
-            animation: glitch 2s infinite reverse;
-            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-        }
-        .logo-text::after {
-            content: attr(data-text);
-            position: absolute;
-            left: -2px; top: 0;
-            color: rgba(255,255,255,0.5);
-            mix-blend-mode: overlay;
-            animation: glitch 3s infinite;
-            clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%);
-        }
-
-        /* Sidebar Info */
-        .sidebar {
-            padding: 20px;
-            border-right: 1px solid var(--dim);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            background: rgba(0,0,0,0.4);
-        }
-        .data-block {
-            border: 1px solid var(--dim);
-            padding: 15px;
-            position: relative;
-            overflow: hidden;
-        }
-        .data-block::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 2px; height: 100%;
-            background: var(--fg);
-        }
-        .data-label {
+        .win-title {
             font-size: 0.7rem;
-            color: #888;
-            margin-bottom: 5px;
-            display: block;
+            letter-spacing: 1px;
+            color: var(--c-sec);
         }
-        .data-val {
-            font-size: 1.2rem;
-            font-family: var(--font-ui);
-            font-weight: 700;
-        }
-
-        /* Main Stage */
-        .stage {
-            position: relative;
+        .win-controls {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
-            perspective: 1000px;
+            gap: 5px;
         }
-
-        /* Upload Box */
-        .upload-zone {
-            width: 600px;
-            height: 300px;
-            border: 1px dashed var(--mid);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: 0.3s;
-            background: rgba(10,10,10,0.5);
-            position: relative;
+        .win-btn {
+            width: 10px; height: 10px;
+            border: 1px solid var(--c-sec);
+            background: transparent;
         }
-        .upload-zone:hover {
-            border-color: var(--fg);
-            box-shadow: 0 0 30px rgba(255,255,255,0.1);
-            transform: scale(1.02);
-        }
-
-        /* Video Interface */
-        .vid-container {
-            display: none; /* Hidden initially */
-            width: 100%;
-            height: 100%;
-            flex-direction: column;
-            position: relative;
-            border: 1px solid var(--dim);
-            background: #000;
-        }
-        
-        /* Holographic Border Animation */
-        .vid-container::after {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(45deg, #fff, transparent, #fff);
-            z-index: -1;
-            background-size: 400% 400%;
-            animation: borderFlow 10s ease infinite;
-            opacity: 0.5;
-        }
-
-        .video-wrapper {
+        .win-content {
+            padding: 20px;
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- COMPONENT: LOGO --- */
+        #logo-container {
+            width: 400px; height: 100px;
             position: relative;
             overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        /* --- COMPONENT: UPLOAD --- */
+        .upload-grid {
+            width: 100%; height: 100%;
+            border: 1px dashed var(--c-sec);
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-direction: column;
+            transition: 0.3s;
+        }
+        .upload-grid:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--c-pri);
+        }
+
+        /* --- COMPONENT: VIDEO PLAYER --- */
+        .video-stage {
+            width: 100%;
+            flex: 1;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--c-dim);
         }
         video {
-            max-width: 100%;
-            max-height: 55vh;
-            display: block;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            max-width: 100%; max-height: 100%;
         }
-
-        /* Scanner Line (Visual) */
-        .scanner-line {
-            position: absolute;
-            top: 0; left: 50%;
-            width: 2px; height: 100%;
-            background: rgba(255,255,255,0.5);
-            box-shadow: 0 0 15px white;
-            z-index: 10;
-            pointer-events: none;
-            animation: scanLR 3s ease-in-out infinite;
-            display: none; /* Show on pause */
+        
+        /* --- COMPONENT: CONTROLS --- */
+        .control-rack {
+            height: auto;
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
         }
-
-        /* Controls */
-        .control-panel {
-            background: rgba(20,20,20,0.95);
-            border-top: 1px solid var(--dim);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        /* Slider */
-        .seek-wrap {
-            position: relative;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            cursor: none;
-        }
-        .track {
-            width: 100%;
-            height: 4px;
-            background: var(--dim);
+        .scrubber {
+            grid-column: 1 / -1;
+            height: 20px;
+            background: var(--c-dim);
             position: relative;
             overflow: hidden;
         }
-        .fill {
-            height: 100%;
-            background: var(--fg);
-            width: 0%;
-            position: absolute;
-            top: 0; left: 0;
+        .scrub-bar {
+            height: 100%; background: var(--c-pri); width: 0%;
+            position: relative;
+            z-index: 1;
         }
-        /* The range input is invisible but sits on top to capture events */
-        input[type="range"] {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            opacity: 0;
-            z-index: 20;
-            cursor: none;
-        }
-        .thumb {
-            position: absolute;
-            width: 10px; height: 20px;
-            background: #fff;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 15;
-            box-shadow: 0 0 10px #fff;
+        .scrub-ghost {
+            position: absolute; top: 0; left: 0; height: 100%; width: 100%;
+            background: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.5) 3px);
+            z-index: 2;
             pointer-events: none;
         }
-
-        /* Buttons */
-        .btn-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
+        input[type="range"] {
+            position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; z-index: 3;
         }
+
         .btn {
+            border: 1px solid var(--c-sec);
             background: transparent;
-            border: 1px solid var(--mid);
-            color: var(--fg);
-            font-family: var(--font-ui);
-            font-weight: 700;
-            text-transform: uppercase;
+            color: var(--c-pri);
+            font-family: var(--f-mono);
             padding: 10px 20px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
             transition: 0.2s;
             position: relative;
             overflow: hidden;
-            font-size: 0.9rem;
-        }
-        /* Button Hover Fill Effect */
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 0%; height: 100%;
-            background: var(--fg);
-            transition: 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            z-index: -1;
         }
         .btn:hover {
-            color: var(--bg);
-            border-color: var(--fg);
+            background: var(--c-pri);
+            color: var(--c-void);
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
         }
-        .btn:hover::before {
-            width: 100%;
-        }
-        .btn-extract {
-            margin-left: auto;
-            border: 1px solid var(--fg);
-            box-shadow: 0 0 10px rgba(255,255,255,0.1);
+        .btn-main {
+            border-color: var(--c-pri);
+            font-weight: 800;
         }
 
-        /* Logs */
-        .log-panel {
-            grid-column: 3;
-            border-left: 1px solid var(--dim);
-            background: rgba(0,0,0,0.6);
-            display: flex;
-            flex-direction: column;
-            padding: 0;
-        }
-        .log-head {
-            padding: 15px;
-            background: var(--dim);
-            font-size: 0.8rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        #log-content {
-            padding: 15px;
-            font-size: 0.75rem;
-            color: #aaa;
-            flex: 1;
+        /* --- COMPONENT: TERMINAL --- */
+        .term-lines {
+            font-size: 0.7rem;
+            color: var(--c-sec);
+            line-height: 1.4;
+            height: 100%;
             overflow-y: auto;
-            font-family: 'Share Tech Mono', monospace;
         }
-        .log-line {
-            margin-bottom: 6px;
-            animation: slideIn 0.2s ease-out;
-        }
-        .log-success { color: #fff; text-shadow: 0 0 5px #fff; }
+        .log-entry { animation: fadeIn 0.2s; }
+        .log-succ { color: var(--c-pri); }
+        .log-warn { color: #ff0000; }
 
-        /* Footer */
-        .footer {
-            grid-column: 1 / -1;
-            border-top: 1px solid var(--dim);
+        /* --- LOADING SCREEN --- */
+        #boot-sequence {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-            background: #050505;
+            justify-content: center;
+            flex-direction: column;
         }
-        .socials {
-            display: flex;
-            gap: 20px;
+        .boot-text {
+            font-size: 2rem;
+            font-family: var(--f-head);
+            margin-bottom: 20px;
+            animation: glitch 1s infinite;
         }
-        .s-link {
-            color: #888;
-            text-decoration: none;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: 0.3s;
+        .boot-bar {
+            width: 300px; height: 2px; background: #333;
+            position: relative;
         }
-        .s-link:hover {
-            color: #fff;
-            text-shadow: 0 0 10px #fff;
+        .boot-prog {
+            position: absolute; top:0; left:0; height: 100%; width: 0%; background: #fff;
         }
 
         /* ANIMATIONS */
-        @keyframes spin { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
-        @keyframes glitch { 
-            0% { clip-path: polygon(0 2%, 100% 2%, 100% 5%, 0 5%); transform: translate(2px,0); }
-            10% { clip-path: polygon(0 15%, 100% 15%, 100% 15%, 0 15%); transform: translate(-2px,0); }
-            20% { clip-path: polygon(0 10%, 100% 10%, 100% 20%, 0 20%); transform: translate(2px,0); }
-            100% { clip-path: polygon(0 0, 0 0, 0 0, 0 0); transform: translate(0,0); }
-        }
-        @keyframes borderFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes scanLR { 0%,100% { left: 10%; opacity:0; } 10% { opacity:1;} 50% { left: 90%; } 90% { opacity:1; } }
-        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes bootFade { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+        @keyframes spin { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+        @keyframes glitch { 0% { opacity: 1; transform: translate(0); } 20% { opacity: 0.8; transform: translate(-2px, 2px); } 40% { opacity: 1; transform: translate(2px, -2px); } 100% { opacity: 1; } }
+        @keyframes fadeIn { from {opacity:0; transform:translateY(5px);} to {opacity:1; transform:translateY(0);} }
 
+        .visible { opacity: 1 !important; transform: scale(1) !important; }
         .hidden { display: none !important; }
-        .reveal { animation: bootFade 1s forwards ease-in-out; }
 
     </style>
 </head>
 <body>
 
-    <!-- BACKGROUND FX -->
-    <canvas id="matrix-canvas"></canvas>
-    <div class="scanline-overlay"></div>
-
-    <!-- CUSTOM CURSOR -->
-    <div id="cursor-host">
-        <div class="c-dot"></div>
-        <div class="c-circle"></div>
+    <!-- --- LAYERS --- -->
+    <div id="boot-sequence">
+        <div class="boot-text">SYSTEM CORE X</div>
+        <div class="boot-bar"><div class="boot-prog" id="boot-prog"></div></div>
+        <div style="margin-top: 10px; font-size: 0.7rem; color: #666;">INITIALIZING NEURAL BRIDGE...</div>
     </div>
 
-    <!-- MAIN LAYOUT -->
-    <div class="main-grid hidden" id="app-grid">
-        
-        <!-- HEADER -->
-        <div class="header">
-            <div class="logo-text hover-effect" data-text="MEXTRACT">MEXTRACT</div>
-            <div style="text-align: right; font-size: 0.7rem; color: #666;">
-                <div id="sys-time">00:00:00</div>
-                <div>PROTOCOL V4 // HYPER-FLUID</div>
-            </div>
-        </div>
+    <div class="post-process"></div>
+    <canvas id="rain-canvas" class="canvas-stack"></canvas>
+    <canvas id="ui-fx-canvas" class="canvas-stack"></canvas>
 
-        <!-- SIDEBAR -->
-        <div class="sidebar">
-            <div class="data-block hover-effect">
-                <span class="data-label">RENDER ENGINE</span>
-                <span class="data-val text-scramble">CANVAS 2D</span>
-            </div>
-            <div class="data-block hover-effect">
-                <span class="data-label">INPUT SOURCE</span>
-                <span class="data-val text-scramble" id="status-input">WAITING...</span>
-            </div>
-            <div class="data-block hover-effect">
-                <span class="data-label">MEMORY ALLOC</span>
-                <span class="data-val" id="mem-val">2048 MB</span>
-            </div>
-        </div>
+    <div id="cursor-layer">
+        <div class="cursor-x-line"></div>
+        <div class="cursor-y-line"></div>
+        <div class="cursor-main"></div>
+        <div class="cursor-dot"></div>
+    </div>
 
-        <!-- MAIN STAGE -->
-        <div class="stage">
+    <!-- --- UI WINDOWS --- -->
+    
+    <!-- WINDOW 1: MAIN INTERFACE -->
+    <div class="os-window" id="win-main" style="width: 800px; height: 600px; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);">
+        <div class="win-header" id="drag-main">
+            <span class="win-title">MExtract_GUI // v.10.0</span>
+            <div class="win-controls"><div class="win-btn"></div><div class="win-btn"></div></div>
+        </div>
+        <div class="win-content">
             
-            <!-- UPLOAD -->
-            <div class="upload-zone hover-effect" id="drop-area">
-                <div style="font-size: 3rem; font-weight: 100;">+</div>
-                <div style="margin-top: 10px; letter-spacing: 2px;">DRAG VIDEO SOURCE</div>
-                <div style="margin-top: 5px; font-size: 0.7rem; color: #666;">MP4 / MOV / WEBM</div>
-                <input type="file" id="file-in" accept="video/*" hidden>
+            <!-- LOGO MORPH ZONE -->
+            <div id="logo-container">
+                <canvas id="logo-canvas" width="400" height="100"></canvas>
             </div>
 
-            <!-- VIDEO PLAYER HUD -->
-            <div class="vid-container" id="vid-ui">
-                <div class="video-wrapper">
-                    <div class="scanner-line" id="scanner"></div>
-                    <video id="main-vid" playsinline muted></video>
+            <!-- STACK MANAGER -->
+            <div id="stack-upload" class="upload-grid interactable" data-label="UPLOAD SOURCE">
+                <div style="font-size: 3rem;">+</div>
+                <div style="margin-top: 10px;">MOUNT VIDEO FILE</div>
+                <input type="file" id="file-input" accept="video/*" hidden>
+            </div>
+
+            <div id="stack-editor" class="hidden" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
+                <div class="video-stage">
+                    <video id="main-video" playsinline muted></video>
                 </div>
-                
-                <div class="control-panel">
+                <div class="control-rack">
+                    <div class="scrubber interactable" data-label="SEEK TIME">
+                        <div class="scrub-bar" id="scrub-bar"></div>
+                        <div class="scrub-ghost"></div>
+                        <input type="range" id="seek-input" min="0" value="0" step="0.001">
+                    </div>
                     
-                    <!-- SMOOTH SLIDER -->
-                    <div class="seek-wrap hover-effect">
-                        <div class="track">
-                            <div class="fill" id="seek-fill"></div>
-                        </div>
-                        <div class="thumb" id="seek-thumb"></div>
-                        <input type="range" id="seek-bar" min="0" value="0" step="0.001">
+                    <div style="display:flex; gap: 10px; align-items: center;">
+                        <button class="btn interactable" id="btn-prev" data-label="FRAME -1">&lt;</button>
+                        <button class="btn interactable" id="btn-play" data-label="TOGGLE">PLAY</button>
+                        <button class="btn interactable" id="btn-next" data-label="FRAME +1">&gt;</button>
                     </div>
 
-                    <!-- CONTROLS ROW -->
-                    <div class="btn-row">
-                        <!-- FRAME STEPPER -->
-                        <button class="btn hover-effect" id="frame-back" style="padding: 10px 15px;">
-                            &lt; FRAME
-                        </button>
-                        
-                        <button class="btn hover-effect" id="btn-play" style="width: 120px;">
-                            PLAY
-                        </button>
-                        
-                        <button class="btn hover-effect" id="frame-fwd" style="padding: 10px 15px;">
-                            FRAME &gt;
-                        </button>
-
-                        <!-- TIMECODE -->
-                        <div style="font-family: 'Share Tech Mono'; margin-left: 15px; font-size: 1.1rem;" id="time-code">
-                            00:00.00
-                        </div>
-
-                        <!-- EXTRACT BUTTON -->
-                        <button class="btn btn-extract hover-effect" id="btn-extract">
-                            [ EXTRACT LOSSLESS ]
-                        </button>
+                    <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end;">
+                        <div id="time-display" style="font-size: 0.8rem;">00:00.00</div>
+                        <button class="btn btn-main interactable" id="btn-extract" data-label="EXECUTE">EXTRACT</button>
                     </div>
                 </div>
             </div>
 
         </div>
-
-        <!-- LOGS -->
-        <div class="log-panel">
-            <div class="log-head">SYSTEM_LOG</div>
-            <div id="log-content">
-                <div class="log-line">> INITIALIZING KERNEL...</div>
-                <div class="log-line">> VISUAL INTERFACE LOADED.</div>
-            </div>
-        </div>
-
-        <!-- FOOTER -->
-        <div class="footer">
-            <div style="font-size: 0.7rem; opacity: 0.5;">MAXFLUX AI LABS © 2025</div>
-            <div class="socials">
-                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="s-link hover-effect">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg> @maxfluxai
-                </a>
-                <a href="https://www.x.com/maxfluxai" target="_blank" class="s-link hover-effect">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> @maxfluxai
-                </a>
-            </div>
-        </div>
-
     </div>
 
-    <!-- PROCESSING CANVAS -->
-    <canvas id="proc-canvas" class="hidden"></canvas>
+    <!-- WINDOW 2: SYSTEM LOG -->
+    <div class="os-window" id="win-log" style="width: 300px; height: 400px; top: 20%; left: 10%;">
+        <div class="win-header" id="drag-log">
+            <span class="win-title">KERNEL_EVENTS</span>
+            <div class="win-controls"><div class="win-btn"></div></div>
+        </div>
+        <div class="win-content">
+            <div class="term-lines" id="sys-log"></div>
+        </div>
+    </div>
+
+    <!-- WINDOW 3: AUDIO VISUALIZER -->
+    <div class="os-window" id="win-audio" style="width: 300px; height: 150px; bottom: 10%; right: 5%;">
+        <div class="win-header" id="drag-audio">
+            <span class="win-title">AUDIO_SYNTH</span>
+        </div>
+        <div class="win-content" style="padding: 0;">
+            <canvas id="audio-scope" style="width: 100%; height: 100%; opacity: 0.5;"></canvas>
+        </div>
+    </div>
+
 
     <script>
-        /* --- 1. SYSTEM BOOT & UI ANIMATION --- */
-        window.addEventListener('load', () => {
-            const app = document.getElementById('app-grid');
-            setTimeout(() => {
-                app.classList.remove('hidden');
-                app.classList.add('reveal');
-                log('SYSTEM ONLINE.');
-                initRain();
-            }, 800);
-        });
+        /* 
+        ==========================================================================
+        // MEXTRACT ENGINE CORE
+        // 3000 LINES OF LOGIC CONDENSED INTO HIGH-DENSITY JS
+        ==========================================================================
+        */
 
-        // Cursor Logic
-        const cursorHost = document.getElementById('cursor-host');
-        document.addEventListener('mousemove', e => {
-            cursorHost.style.left = e.clientX + 'px';
-            cursorHost.style.top = e.clientY + 'px';
-        });
-        document.querySelectorAll('.hover-effect').forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('is-hovering'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('is-hovering'));
-        });
+        // --- MODULE: AUDIO SYNTHESIZER ---
+        const AudioCore = {
+            ctx: null,
+            init: function() {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+                this.master = this.ctx.createGain();
+                this.master.gain.value = 0.1; // Keep it quiet
+                this.master.connect(this.ctx.destination);
+            },
+            playTone: function(freq, type, duration) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.5, this.ctx.currentTime + duration);
+                
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.master);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            uiHover: function() { this.playTone(800, 'sine', 0.05); },
+            uiClick: function() { this.playTone(1200, 'square', 0.1); },
+            uiError: function() { this.playTone(150, 'sawtooth', 0.3); },
+            uiSuccess: function() { 
+                this.playTone(2000, 'sine', 0.1); 
+                setTimeout(() => this.playTone(3000, 'sine', 0.2), 100);
+            }
+        };
 
-        // Text Scramble Effect
-        const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#@%';
-        document.querySelectorAll('.text-scramble').forEach(el => {
-            el.addEventListener('mouseover', () => {
-                let original = el.innerText;
-                let i = 0;
-                let interval = setInterval(() => {
-                    el.innerText = original.split('').map((char, idx) => {
-                        if(idx < i) return original[idx];
-                        return scrambleChars[Math.floor(Math.random() * scrambleChars.length)];
-                    }).join('');
-                    if(i >= original.length) clearInterval(interval);
-                    i += 1/2;
-                }, 30);
-            });
-        });
-
-        // Clock
-        setInterval(() => {
-            document.getElementById('sys-time').innerText = new Date().toLocaleTimeString('en-GB');
-            if(Math.random() > 0.9) document.getElementById('mem-val').innerText = (Math.random() * 2000 + 1000).toFixed(0) + " MB";
-        }, 1000);
-
-
-        /* --- 2. BACKGROUND RAIN (MATRIX LITE) --- */
-        function initRain() {
-            const canvas = document.getElementById('matrix-canvas');
-            const ctx = canvas.getContext('2d');
-            let w, h;
-            const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-            window.addEventListener('resize', resize);
-            resize();
-
-            const cols = Math.floor(w / 20);
-            const ypos = Array(cols).fill(0);
-
-            function draw() {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-                ctx.fillRect(0, 0, w, h);
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '12px monospace';
-
-                ypos.forEach((y, ind) => {
-                    const text = String.fromCharCode(Math.random() * 128);
-                    const x = ind * 20;
-                    ctx.fillText(text, x, y);
-                    if (y > h && Math.random() > 0.975) ypos[ind] = 0;
-                    else ypos[ind] = y + 20;
+        // --- MODULE: RAIN PHYSICS ---
+        class RainSystem {
+            constructor() {
+                this.c = document.getElementById('rain-canvas');
+                this.ctx = this.c.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.drops = [];
+                this.initDrops();
+                this.loop();
+            }
+            resize() { this.c.width = window.innerWidth; this.c.height = window.innerHeight; }
+            initDrops() {
+                for(let i=0; i<150; i++) this.drops.push(this.newDrop());
+            }
+            newDrop() {
+                return {
+                    x: Math.random() * this.c.width,
+                    y: Math.random() * this.c.height,
+                    l: Math.random() * 20 + 10, // Length (Pixel art style stretch)
+                    s: Math.random() * 10 + 10  // Speed
+                };
+            }
+            loop() {
+                this.ctx.clearRect(0,0,this.c.width,this.c.height);
+                this.ctx.fillStyle = '#fff';
+                this.drops.forEach(d => {
+                    d.y += d.s;
+                    if(d.y > this.c.height) { d.y = -20; d.x = Math.random() * this.c.width; }
+                    this.ctx.fillRect(Math.floor(d.x), Math.floor(d.y), 1, Math.floor(d.l));
                 });
-                requestAnimationFrame(draw);
+                requestAnimationFrame(() => this.loop());
             }
-            draw();
         }
 
-
-        /* --- 3. VIDEO ENGINE (OPTIMIZED) --- */
-        const video = document.getElementById('main-vid');
-        const fileIn = document.getElementById('file-in');
-        const dropArea = document.getElementById('drop-area');
-        const vidUI = document.getElementById('vid-ui');
-        const seekBar = document.getElementById('seek-bar');
-        const seekFill = document.getElementById('seek-fill');
-        const seekThumb = document.getElementById('seek-thumb');
-        const timeCode = document.getElementById('time-code');
-        const btnPlay = document.getElementById('btn-play');
-        const scanner = document.getElementById('scanner');
-
-        // Log Helper
-        function log(msg, type) {
-            const box = document.getElementById('log-content');
-            const div = document.createElement('div');
-            div.className = 'log-line' + (type ? ' log-success' : '');
-            div.innerText = `> ${msg}`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        // Upload
-        dropArea.addEventListener('click', () => fileIn.click());
-        dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = '#fff'; });
-        dropArea.addEventListener('dragleave', () => dropArea.style.borderColor = '');
-        dropArea.addEventListener('drop', e => { e.preventDefault(); loadVideo(e.dataTransfer.files[0]); });
-        fileIn.addEventListener('change', e => loadVideo(e.target.files[0]));
-
-        function loadVideo(file) {
-            if(!file || !file.type.startsWith('video')) return;
-            const url = URL.createObjectURL(file);
-            video.src = url;
-            video.onloadedmetadata = () => {
-                dropArea.classList.add('hidden');
-                vidUI.style.display = 'flex';
-                vidUI.classList.add('reveal');
-                seekBar.max = video.duration;
-                document.getElementById('status-input').innerText = "VIDEO_LOADED";
-                log(`FILE LOADED: ${file.name}`, true);
-            };
-        }
-
-        // --- ZERO LAG SEEKING ---
-        let isDragging = false;
-        
-        // Update UI Loop (Runs every frame)
-        function updateLoop() {
-            if (!isDragging) {
-                // Update slider visuals if video is playing normally
-                const pct = (video.currentTime / video.duration) * 100 || 0;
-                seekFill.style.width = pct + "%";
-                seekThumb.style.left = pct + "%";
-                if(document.activeElement !== seekBar) seekBar.value = video.currentTime;
+        // --- MODULE: PARTICLE LOGO MORPH ---
+        class LogoEngine {
+            constructor() {
+                this.c = document.getElementById('logo-canvas');
+                this.ctx = this.c.getContext('2d');
+                this.textA = "MEXTRACT";
+                this.textB = "MAXFLUXAI";
+                this.particles = [];
+                this.target = "A";
+                this.mouseOver = false;
+                
+                this.c.addEventListener('mouseenter', () => { this.target = "B"; this.mouseOver = true; AudioCore.uiHover(); });
+                this.c.addEventListener('mouseleave', () => { this.target = "A"; this.mouseOver = false; });
+                
+                this.init();
+                this.animate();
             }
             
-            // Update timecode
-            const m = Math.floor(video.currentTime / 60).toString().padStart(2,'0');
-            const s = Math.floor(video.currentTime % 60).toString().padStart(2,'0');
-            const ms = Math.floor((video.currentTime % 1) * 100).toString().padStart(2,'0');
-            timeCode.innerText = `${m}:${s}.${ms}`;
-
-            requestAnimationFrame(updateLoop);
-        }
-        requestAnimationFrame(updateLoop);
-
-        // Slider Interaction (Throttle logic)
-        seekBar.addEventListener('mousedown', () => { isDragging = true; video.pause(); });
-        seekBar.addEventListener('mouseup', () => { isDragging = false; });
-        
-        // The core "No Lag" trick: Use requestAnimationFrame to throttle seek calls
-        let seekTarget = null;
-        seekBar.addEventListener('input', (e) => {
-            isDragging = true;
-            seekTarget = parseFloat(e.target.value);
-            
-            // Visual update immediate
-            const pct = (seekTarget / video.duration) * 100;
-            seekFill.style.width = pct + "%";
-            seekThumb.style.left = pct + "%";
-
-            // Video update throttled
-            requestAnimationFrame(() => {
-                if(seekTarget !== null) {
-                    video.currentTime = seekTarget;
-                    seekTarget = null;
+            getPoints(text) {
+                const tmp = document.createElement('canvas');
+                tmp.width = 400; tmp.height = 100;
+                const tctx = tmp.getContext('2d');
+                tctx.font = '900 40px "JetBrains Mono"';
+                tctx.fillStyle = '#fff';
+                tctx.textAlign = 'center';
+                tctx.textBaseline = 'middle';
+                tctx.fillText(text, 200, 50);
+                
+                const data = tctx.getImageData(0,0,400,100).data;
+                const points = [];
+                for(let y=0; y<100; y+=3) {
+                    for(let x=0; x<400; x+=3) {
+                        if(data[(y*400+x)*4+3] > 128) points.push({x,y});
+                    }
                 }
-            });
-        });
-
-        // Play/Pause
-        btnPlay.addEventListener('click', () => {
-            if(video.paused) {
-                video.play();
-                btnPlay.innerText = "PAUSE";
-                scanner.style.display = 'none';
-                log("PLAYBACK STARTED");
-            } else {
-                video.pause();
-                btnPlay.innerText = "PLAY";
-                scanner.style.display = 'block';
-                log("PLAYBACK PAUSED");
+                return points;
             }
-        });
 
-        // --- FRAME STEPPER ---
-        const FRAME_TIME = 0.04; // Approx 1 frame at 25fps. Safe default.
-
-        document.getElementById('frame-back').addEventListener('click', () => {
-            video.pause();
-            video.currentTime = Math.max(0, video.currentTime - FRAME_TIME);
-            btnPlay.innerText = "PLAY";
-            log("FRAME STEP [-]");
-        });
-
-        document.getElementById('frame-fwd').addEventListener('click', () => {
-            video.pause();
-            video.currentTime = Math.min(video.duration, video.currentTime + FRAME_TIME);
-            btnPlay.innerText = "PLAY";
-            log("FRAME STEP [+]");
-        });
-
-
-        // --- EXTRACTION ---
-        document.getElementById('btn-extract').addEventListener('click', () => {
-            if(video.readyState < 2) return;
-
-            // Flash
-            const flash = document.createElement('div');
-            flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999999;mix-blend-mode:overlay;transition:opacity 0.2s;";
-            document.body.appendChild(flash);
-            setTimeout(() => flash.style.opacity = 0, 50);
-            setTimeout(() => flash.remove(), 250);
-
-            // Capture
-            const cvs = document.getElementById('proc-canvas');
-            const ctx = cvs.getContext('2d');
-            cvs.width = video.videoWidth;
-            cvs.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, cvs.width, cvs.height);
-
-            try {
-                const data = cvs.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.download = `FRAME_${video.currentTime.toFixed(3)}.png`;
-                link.href = data;
-                link.click();
-                log(`FRAME EXTRACTED: ${cvs.width}x${cvs.height}`, true);
-            } catch(e) {
-                log("ERROR: SECURITY PROTOCOL PREVENTED DOWNLOAD");
+            init() {
+                this.ptsA = this.getPoints(this.textA);
+                this.ptsB = this.getPoints(this.textB);
+                const max = Math.max(this.ptsA.length, this.ptsB.length);
+                
+                for(let i=0; i<max; i++) {
+                    this.particles.push({
+                        x: Math.random()*400, y: Math.random()*100,
+                        vx: 0, vy: 0
+                    });
+                }
             }
-        });
+
+            animate() {
+                this.ctx.clearRect(0,0,400,100);
+                this.ctx.fillStyle = '#fff';
+                
+                const targets = this.target === "A" ? this.ptsA : this.ptsB;
+                
+                this.particles.forEach((p, i) => {
+                    let tx, ty;
+                    if(targets[i]) {
+                        tx = targets[i].x;
+                        ty = targets[i].y;
+                    } else {
+                        tx = 200; ty = 50; // Center fallback
+                    }
+                    
+                    const dx = tx - p.x;
+                    const dy = ty - p.y;
+                    
+                    p.vx += dx * 0.03; // Spring
+                    p.vy += dy * 0.03;
+                    p.vx *= 0.85;      // Damp
+                    p.vy *= 0.85;
+                    
+                    if(this.mouseOver) {
+                        p.x += (Math.random()-0.5)*2; // Jitter
+                        p.y += (Math.random()-0.5)*2;
+                    }
+                    
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    if(targets[i]) this.ctx.fillRect(p.x, p.y, 2, 2);
+                });
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // --- MODULE: WINDOW MANAGER ---
+        class WindowManager {
+            constructor() {
+                this.windows = document.querySelectorAll('.os-window');
+                this.zIndex = 100;
+                this.dragTarget = null;
+                this.offset = {x:0, y:0};
+                
+                this.windows.forEach(w => {
+                    w.addEventListener('mousedown', () => this.focus(w));
+                    const header = w.querySelector('.win-header');
+                    if(header) header.addEventListener('mousedown', (e) => this.startDrag(e, w));
+                });
+
+                document.addEventListener('mousemove', (e) => this.drag(e));
+                document.addEventListener('mouseup', () => this.endDrag());
+            }
+            
+            focus(win) {
+                this.zIndex++;
+                win.style.zIndex = this.zIndex;
+                win.classList.add('active');
+                this.windows.forEach(w => { if(w !== win) w.classList.remove('active'); });
+            }
+
+            startDrag(e, win) {
+                this.dragTarget = win;
+                const rect = win.getBoundingClientRect();
+                this.offset.x = e.clientX - rect.left;
+                this.offset.y = e.clientY - rect.top;
+                // Convert transform translate to top/left for easier dragging
+                win.style.transform = 'none'; 
+                win.style.left = rect.left + 'px';
+                win.style.top = rect.top + 'px';
+                win.style.width = rect.width + 'px';
+                win.style.height = rect.height + 'px';
+            }
+
+            drag(e) {
+                if(!this.dragTarget) return;
+                this.dragTarget.style.left = (e.clientX - this.offset.x) + 'px';
+                this.dragTarget.style.top = (e.clientY - this.offset.y) + 'px';
+            }
+
+            endDrag() { this.dragTarget = null; }
+        }
+
+        // --- MODULE: APP LOGIC & VIDEO ---
+        const App = {
+            els: {
+                boot: document.getElementById('boot-sequence'),
+                bootProg: document.getElementById('boot-prog'),
+                winMain: document.getElementById('win-main'),
+                log: document.getElementById('sys-log'),
+                upload: document.getElementById('stack-upload'),
+                editor: document.getElementById('stack-editor'),
+                video: document.getElementById('main-video'),
+                fileIn: document.getElementById('file-input'),
+                seek: document.getElementById('seek-input'),
+                scrub: document.getElementById('scrub-bar'),
+                time: document.getElementById('time-display')
+            },
+            
+            log: function(msg, type) {
+                const d = document.createElement('div');
+                d.className = 'log-entry' + (type ? ' log-'+type : '');
+                d.innerText = `> ${msg}`;
+                this.els.log.prepend(d);
+            },
+
+            boot: function() {
+                // Simulate BIOS
+                let p = 0;
+                const int = setInterval(() => {
+                    p += Math.random()*10;
+                    if(p > 100) p = 100;
+                    this.els.bootProg.style.width = p + '%';
+                    if(p === 100) {
+                        clearInterval(int);
+                        setTimeout(() => {
+                            this.els.boot.classList.add('hidden');
+                            document.querySelectorAll('.os-window').forEach(w => w.classList.add('visible'));
+                            this.log("SYSTEM ONLINE", "succ");
+                            AudioCore.init();
+                        }, 500);
+                    }
+                }, 100);
+            },
+
+            init: function() {
+                this.boot();
+                new RainSystem();
+                new LogoEngine();
+                new WindowManager();
+
+                // Upload Handlers
+                this.els.upload.addEventListener('click', () => this.els.fileIn.click());
+                this.els.fileIn.addEventListener('change', (e) => this.loadVideo(e.target.files[0]));
+                
+                // Video Handlers
+                const v = this.els.video;
+                document.getElementById('btn-play').addEventListener('click', () => {
+                    if(v.paused) { v.play(); this.log("PLAYBACK START"); }
+                    else { v.pause(); this.log("PLAYBACK HALT"); }
+                    AudioCore.uiClick();
+                });
+                
+                // Seeking
+                this.els.seek.addEventListener('input', (e) => {
+                    v.currentTime = e.target.value;
+                    v.pause();
+                    this.updateScrub();
+                });
+                v.addEventListener('timeupdate', () => {
+                    this.els.seek.value = v.currentTime;
+                    this.updateScrub();
+                });
+
+                // Frame Steps
+                const F = 0.04;
+                document.getElementById('btn-prev').addEventListener('click', () => { v.currentTime -= F; v.pause(); AudioCore.uiClick(); });
+                document.getElementById('btn-next').addEventListener('click', () => { v.currentTime += F; v.pause(); AudioCore.uiClick(); });
+
+                // Extract
+                document.getElementById('btn-extract').addEventListener('click', () => this.extract());
+
+                // Cursor Interaction
+                document.querySelectorAll('.interactable').forEach(el => {
+                    el.addEventListener('mouseenter', () => { AudioCore.uiHover(); document.body.classList.add('state-hover'); });
+                    el.addEventListener('mouseleave', () => { document.body.classList.remove('state-hover'); });
+                    el.addEventListener('mousedown', () => { AudioCore.uiClick(); document.body.classList.add('state-active'); });
+                    el.addEventListener('mouseup', () => { document.body.classList.remove('state-active'); });
+                });
+                
+                // Mouse tracking
+                const cx = document.querySelector('.cursor-main');
+                const cd = document.querySelector('.cursor-dot');
+                const clx = document.querySelector('.cursor-x-line');
+                const cly = document.querySelector('.cursor-y-line');
+                
+                document.addEventListener('mousemove', e => {
+                    cx.style.left = e.clientX + 'px'; cx.style.top = e.clientY + 'px';
+                    cd.style.left = e.clientX + 'px'; cd.style.top = e.clientY + 'px';
+                    clx.style.top = e.clientY + 'px';
+                    cly.style.left = e.clientX + 'px';
+                });
+            },
+
+            loadVideo: function(file) {
+                if(!file) return;
+                this.log("MOUNTING DRIVE...", "warn");
+                const url = URL.createObjectURL(file);
+                this.els.video.src = url;
+                this.els.video.onloadedmetadata = () => {
+                    this.els.upload.classList.add('hidden');
+                    this.els.editor.classList.remove('hidden');
+                    this.els.seek.max = this.els.video.duration;
+                    this.log("VIDEO STREAM ACTIVE", "succ");
+                    this.log(`RES: ${this.els.video.videoWidth}x${this.els.video.videoHeight}`);
+                    AudioCore.uiSuccess();
+                };
+            },
+
+            updateScrub: function() {
+                const pct = (this.els.video.currentTime / this.els.video.duration) * 100;
+                this.els.scrub.style.width = pct + "%";
+                this.els.time.innerText = this.els.video.currentTime.toFixed(2);
+            },
+
+            extract: function() {
+                if(this.els.video.readyState < 2) return;
+                this.log("INITIATING FRAME CAPTURE...", "warn");
+                
+                const cvs = document.createElement('canvas');
+                cvs.width = this.els.video.videoWidth;
+                cvs.height = this.els.video.videoHeight;
+                const ctx = cvs.getContext('2d');
+                ctx.drawImage(this.els.video, 0, 0, cvs.width, cvs.height);
+                
+                try {
+                    const data = cvs.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    a.href = data;
+                    a.download = `FRAME_${Date.now()}.png`;
+                    a.click();
+                    this.log("FRAME SAVED TO DISK", "succ");
+                    AudioCore.uiSuccess();
+                } catch(e) {
+                    this.log("ERR: SECURITY BLOCK (CORS)", "warn");
+                    AudioCore.uiError();
+                }
+            }
+        };
+
+        // --- MODULE: AUDIO VISUALIZER (SIMULATED) ---
+        (function() {
+            const c = document.getElementById('audio-scope');
+            const ctx = c.getContext('2d');
+            let data = new Array(50).fill(0);
+            
+            function loop() {
+                data.shift();
+                data.push(Math.random());
+                
+                c.width = c.offsetWidth; c.height = c.offsetHeight;
+                ctx.clearRect(0,0,c.width,c.height);
+                ctx.strokeStyle = '#ffffff';
+                ctx.beginPath();
+                
+                const step = c.width / 50;
+                data.forEach((v, i) => {
+                    const h = v * c.height;
+                    if(i==0) ctx.moveTo(i*step, (c.height-h)/2);
+                    else ctx.lineTo(i*step, (c.height-h)/2 + (Math.random()*h));
+                });
+                ctx.stroke();
+                requestAnimationFrame(loop);
+            }
+            loop();
+        })();
+
+        // START SYSTEM
+        window.addEventListener('load', () => App.init());
 
     </script>
 </body>
