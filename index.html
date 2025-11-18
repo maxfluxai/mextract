@@ -2,780 +2,791 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MEXTRACT | SYSTEM CORE X</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MEXTRACT | TITANIUM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+
     <style>
         /* 
-        ==========================================================================
-        // 0. CORE KERNEL STYLES
-        ==========================================================================
+        ================================================================
+        // 0. KERNEL CONFIGURATION & VARIABLES
+        ================================================================
         */
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;800&family=Syncopate:wght@700&display=swap');
-
         :root {
-            --c-void: #030303;
-            --c-pri: #ffffff;
-            --c-sec: #888888;
-            --c-dim: #222222;
-            --c-acc: #ffffff;
-            --f-mono: 'JetBrains Mono', monospace;
-            --f-head: 'Syncopate', sans-serif;
-            --z-back: -1;
-            --z-ui: 10;
-            --z-win: 20;
-            --z-top: 1000;
-            --crt-flicker: 0.02s;
+            --bg-depth: #050505;
+            --bg-panel: #0a0a0a;
+            --fg-primary: #ffffff;
+            --fg-dim: #444444;
+            --fg-accent: #ffffff; /* Monochrome aesthetic */
+            --border-width: 1px;
+            --font-disp: 'Orbitron', sans-serif;
+            --font-ui: 'Rajdhani', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            --ease-out: cubic-bezier(0.19, 1, 0.22, 1);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none;
-            cursor: none !important; /* SYSTEM CURSOR DISABLED */
-            scrollbar-width: none;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--c-void);
-            color: var(--c-pri);
-            font-family: var(--f-mono);
+            background-color: var(--bg-depth);
+            color: var(--fg-primary);
+            font-family: var(--font-ui);
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* --- CUSTOM CURSOR ENGINE --- */
-        #cursor-layer {
+        /* --- BACKGROUND LAYERS --- */
+        #rain-canvas {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
+            z-index: 0;
             pointer-events: none;
-            z-index: var(--z-top);
-            mix-blend-mode: difference;
-        }
-        .cursor-main {
-            position: absolute;
-            width: 20px; height: 20px;
-            border: 1px solid var(--c-pri);
-            transform: translate(-50%, -50%);
-            transition: width 0.1s, height 0.1s;
-        }
-        .cursor-dot {
-            position: absolute;
-            width: 4px; height: 4px;
-            background: var(--c-pri);
-            transform: translate(-50%, -50%);
-        }
-        .cursor-x-line, .cursor-y-line {
-            position: absolute;
-            background: rgba(255,255,255,0.1);
-        }
-        .cursor-x-line { width: 100vw; height: 1px; top: 50%; left: -50vw; }
-        .cursor-y-line { width: 1px; height: 100vh; top: -50vh; left: 50%; }
-        
-        /* Interaction States */
-        body.state-hover .cursor-main {
-            width: 40px; height: 40px;
-            border-style: dashed;
-            animation: spin 4s linear infinite;
-            background: rgba(255,255,255,0.05);
-        }
-        body.state-active .cursor-main {
-            width: 10px; height: 10px;
-            background: var(--c-pri);
+            opacity: 0.2; /* Low opacity as requested */
         }
 
-        /* --- CANVAS LAYERS --- */
-        .canvas-stack {
+        .scanline-overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-        }
-        #rain-canvas { z-index: 0; opacity: 0.15; }
-        #ui-fx-canvas { z-index: 1; pointer-events: none; }
-
-        /* --- CRT & POST PROCESSING --- */
-        .post-process {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 900;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-        }
-
-        /* --- WINDOW MANAGER SYSTEM --- */
-        .os-window {
-            position: absolute;
-            background: rgba(5, 5, 5, 0.9);
-            border: 1px solid var(--c-dim);
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
-            opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.4s, transform 0.4s, border-color 0.2s;
-            z-index: var(--z-win);
-        }
-        .os-window.active {
-            border-color: var(--c-pri);
-            z-index: var(--z-win) + 1;
-            box-shadow: 0 0 20px rgba(255,255,255,0.05);
-        }
-        .win-header {
-            height: 30px;
-            background: var(--c-dim);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
-            cursor: none; /* Logic handled by JS drag */
-            border-bottom: 1px solid var(--c-dim);
-        }
-        .win-title {
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            color: var(--c-sec);
-        }
-        .win-controls {
-            display: flex;
-            gap: 5px;
-        }
-        .win-btn {
-            width: 10px; height: 10px;
-            border: 1px solid var(--c-sec);
-            background: transparent;
-        }
-        .win-content {
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* --- COMPONENT: LOGO --- */
-        #logo-container {
-            width: 400px; height: 100px;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 20px;
-        }
-
-        /* --- COMPONENT: UPLOAD --- */
-        .upload-grid {
-            width: 100%; height: 100%;
-            border: 1px dashed var(--c-sec);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            transition: 0.3s;
-        }
-        .upload-grid:hover {
-            background: rgba(255,255,255,0.05);
-            border-color: var(--c-pri);
-        }
-
-        /* --- COMPONENT: VIDEO PLAYER --- */
-        .video-stage {
-            width: 100%;
-            flex: 1;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid var(--c-dim);
-        }
-        video {
-            max-width: 100%; max-height: 100%;
-        }
-        
-        /* --- COMPONENT: CONTROLS --- */
-        .control-rack {
-            height: auto;
-            margin-top: 10px;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 10px;
-        }
-        .scrubber {
-            grid-column: 1 / -1;
-            height: 20px;
-            background: var(--c-dim);
-            position: relative;
-            overflow: hidden;
-        }
-        .scrub-bar {
-            height: 100%; background: var(--c-pri); width: 0%;
-            position: relative;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.3) 3px
+            );
             z-index: 1;
-        }
-        .scrub-ghost {
-            position: absolute; top: 0; left: 0; height: 100%; width: 100%;
-            background: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.5) 3px);
-            z-index: 2;
             pointer-events: none;
         }
-        input[type="range"] {
-            position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; z-index: 3;
-        }
 
-        .btn {
-            border: 1px solid var(--c-sec);
-            background: transparent;
-            color: var(--c-pri);
-            font-family: var(--f-mono);
-            padding: 10px 20px;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            transition: 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn:hover {
-            background: var(--c-pri);
-            color: var(--c-void);
-            box-shadow: 0 0 15px rgba(255,255,255,0.5);
-        }
-        .btn-main {
-            border-color: var(--c-pri);
-            font-weight: 800;
-        }
-
-        /* --- COMPONENT: TERMINAL --- */
-        .term-lines {
-            font-size: 0.7rem;
-            color: var(--c-sec);
-            line-height: 1.4;
-            height: 100%;
-            overflow-y: auto;
-        }
-        .log-entry { animation: fadeIn 0.2s; }
-        .log-succ { color: var(--c-pri); }
-        .log-warn { color: #ff0000; }
-
-        /* --- LOADING SCREEN --- */
-        #boot-sequence {
+        /* --- LOADING SCREEN (INTERACTIVE) --- */
+        #sys-loader {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: #000;
             z-index: 9999;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            transition: transform 0.8s var(--ease-out);
+        }
+        
+        .loader-btn {
+            border: 2px solid #fff;
+            padding: 20px 40px;
+            background: transparent;
+            color: #fff;
+            font-family: var(--font-disp);
+            font-size: 1.2rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.3s;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        .loader-btn:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 30px rgba(255,255,255,0.5);
+        }
+        .loader-text {
+            margin-top: 20px;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* --- MAIN APP SHELL (RESPONSIVE) --- */
+        #app-shell {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
             flex-direction: column;
+            opacity: 0;
+            transition: opacity 1s ease;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
         }
-        .boot-text {
-            font-size: 2rem;
-            font-family: var(--f-head);
-            margin-bottom: 20px;
-            animation: glitch 1s infinite;
+        #app-shell.active { opacity: 1; }
+
+        /* HEADER */
+        header {
+            height: 80px;
+            border-bottom: 1px solid var(--fg-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(5,5,5,0.9);
         }
-        .boot-bar {
-            width: 300px; height: 2px; background: #333;
+        
+        /* LOGO CANVAS CONTAINER */
+        #logo-wrapper {
+            width: 220px;
+            height: 50px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* WORKSPACE (Middle Area) */
+        .workspace {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
             position: relative;
         }
-        .boot-prog {
-            position: absolute; top:0; left:0; height: 100%; width: 0%; background: #fff;
+
+        /* LEFT PANEL (VIDEO) - GROWS */
+        .panel-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            border-right: 1px solid var(--fg-dim);
         }
 
-        /* ANIMATIONS */
-        @keyframes spin { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
-        @keyframes glitch { 0% { opacity: 1; transform: translate(0); } 20% { opacity: 0.8; transform: translate(-2px, 2px); } 40% { opacity: 1; transform: translate(2px, -2px); } 100% { opacity: 1; } }
-        @keyframes fadeIn { from {opacity:0; transform:translateY(5px);} to {opacity:1; transform:translateY(0);} }
+        /* RIGHT PANEL (CONTROLS/STATS) - FIXED WIDTH ON DESKTOP */
+        .panel-side {
+            width: 350px;
+            background: rgba(10,10,10,0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+        }
 
-        .visible { opacity: 1 !important; transform: scale(1) !important; }
+        /* UPLOAD WIDGET */
+        .upload-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed var(--fg-dim);
+            margin: 20px;
+            transition: 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        .upload-box:hover {
+            border-color: #fff;
+            background: rgba(255,255,255,0.03);
+        }
+        .icon-add { font-size: 4rem; font-weight: 100; margin-bottom: 10px; }
+
+        /* VIDEO PLAYER */
+        .video-stage {
+            flex: 1;
+            display: none; /* Hidden until upload */
+            background: #000;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        video {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* CONTROLS & BUTTONS */
+        .control-group {
+            margin-bottom: 30px;
+        }
+        .label-text {
+            font-family: var(--font-disp);
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 10px;
+            display: block;
+            letter-spacing: 1px;
+        }
+        
+        /* SCRUBBER */
+        .scrub-rail {
+            width: 100%; height: 30px;
+            background: #111;
+            border: 1px solid #333;
+            position: relative;
+            cursor: crosshair;
+        }
+        .scrub-fill {
+            height: 100%; background: #fff; width: 0%;
+            position: absolute; top: 0; left: 0;
+            pointer-events: none;
+        }
+        .scrub-head {
+            width: 2px; height: 100%; background: #fff;
+            position: absolute; top: 0; left: 0;
+            box-shadow: 0 0 10px #fff;
+            pointer-events: none;
+            transform: translateX(-50%);
+        }
+        input[type=range] {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            opacity: 0; cursor: pointer;
+        }
+
+        /* BUTTONS */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+        }
+        .cyber-btn {
+            flex: 1;
+            background: transparent;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 12px 0;
+            font-family: var(--font-ui);
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .cyber-btn:hover {
+            border-color: #fff;
+            background: #fff;
+            color: #000;
+        }
+        .btn-extract {
+            border-color: #fff;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* FOOTER (SOCIALS) */
+        footer {
+            height: 50px;
+            border-top: 1px solid var(--fg-dim);
+            background: #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .social-links {
+            display: flex;
+            gap: 20px;
+        }
+        .social-item {
+            color: #888;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.3s;
+        }
+        .social-item:hover { color: #fff; }
+        .social-icon { width: 16px; height: 16px; fill: currentColor; }
+
+        /* LOGS */
+        .log-box {
+            height: 150px;
+            overflow-y: auto;
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            color: #888;
+            border-top: 1px solid #222;
+            padding-top: 10px;
+        }
+        .log-entry { margin-bottom: 4px; }
+
+        /* 
+        ================================================================
+        // RESPONSIVE BREAKPOINTS (THE FIX)
+        ================================================================
+        */
+        @media (max-width: 900px) {
+            .workspace {
+                flex-direction: column; /* Stack vertically on mobile */
+            }
+            .panel-main {
+                height: 50vh; /* Video takes top half */
+                border-right: none;
+                border-bottom: 1px solid var(--fg-dim);
+            }
+            .panel-side {
+                width: 100%; /* Controls take full width bottom half */
+                height: 50vh;
+                padding: 15px;
+            }
+            .upload-box {
+                margin: 10px;
+            }
+            .icon-add { font-size: 2rem; }
+            .upload-text { font-size: 0.8rem; }
+            
+            /* Hide logs on very small screens to save space */
+            .log-box { display: none; } 
+            
+            /* Bigger touch targets */
+            .cyber-btn { padding: 15px 0; font-size: 1rem; }
+            .scrub-rail { height: 40px; }
+        }
+
+        /* HIDDEN CANVAS */
         .hidden { display: none !important; }
 
     </style>
 </head>
 <body>
 
-    <!-- --- LAYERS --- -->
-    <div id="boot-sequence">
-        <div class="boot-text">SYSTEM CORE X</div>
-        <div class="boot-bar"><div class="boot-prog" id="boot-prog"></div></div>
-        <div style="margin-top: 10px; font-size: 0.7rem; color: #666;">INITIALIZING NEURAL BRIDGE...</div>
+    <!-- 1. BACKGROUND SYSTEM -->
+    <canvas id="rain-canvas"></canvas>
+    <div class="scanline-overlay"></div>
+
+    <!-- 2. LOADING SCREEN -->
+    <div id="sys-loader">
+        <button class="loader-btn" id="init-btn">INITIALIZE SYSTEM</button>
+        <div class="loader-text">MExtract_Protocol_v4 // waiting for user_input</div>
     </div>
 
-    <div class="post-process"></div>
-    <canvas id="rain-canvas" class="canvas-stack"></canvas>
-    <canvas id="ui-fx-canvas" class="canvas-stack"></canvas>
+    <!-- 3. APP SHELL -->
+    <div id="app-shell">
+        
+        <!-- HEADER -->
+        <header>
+            <!-- Interactive Particle Logo -->
+            <div id="logo-wrapper">
+                <canvas id="logo-canvas"></canvas>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-family: var(--font-code); font-size: 0.9rem;" id="clock">00:00</div>
+                <div style="font-size: 0.6rem; opacity: 0.5; letter-spacing: 1px;">SYSTEM ONLINE</div>
+            </div>
+        </header>
 
-    <div id="cursor-layer">
-        <div class="cursor-x-line"></div>
-        <div class="cursor-y-line"></div>
-        <div class="cursor-main"></div>
-        <div class="cursor-dot"></div>
-    </div>
-
-    <!-- --- UI WINDOWS --- -->
-    
-    <!-- WINDOW 1: MAIN INTERFACE -->
-    <div class="os-window" id="win-main" style="width: 800px; height: 600px; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);">
-        <div class="win-header" id="drag-main">
-            <span class="win-title">MExtract_GUI // v.10.0</span>
-            <div class="win-controls"><div class="win-btn"></div><div class="win-btn"></div></div>
-        </div>
-        <div class="win-content">
+        <!-- MAIN WORKSPACE -->
+        <div class="workspace">
             
-            <!-- LOGO MORPH ZONE -->
-            <div id="logo-container">
-                <canvas id="logo-canvas" width="400" height="100"></canvas>
-            </div>
+            <!-- VIDEO PANEL -->
+            <div class="panel-main">
+                <label class="upload-box" id="upload-trigger">
+                    <div class="icon-add">+</div>
+                    <div class="upload-text">UPLOAD VIDEO SOURCE</div>
+                    <div style="font-family:var(--font-code); font-size:0.6rem; margin-top:5px; opacity:0.5;">MP4 / MOV / WEBM</div>
+                    <input type="file" id="file-input" accept="video/*" hidden>
+                </label>
 
-            <!-- STACK MANAGER -->
-            <div id="stack-upload" class="upload-grid interactable" data-label="UPLOAD SOURCE">
-                <div style="font-size: 3rem;">+</div>
-                <div style="margin-top: 10px;">MOUNT VIDEO FILE</div>
-                <input type="file" id="file-input" accept="video/*" hidden>
-            </div>
-
-            <div id="stack-editor" class="hidden" style="width: 100%; height: 100%; display: flex; flex-direction: column;">
-                <div class="video-stage">
+                <div class="video-stage" id="video-stage">
                     <video id="main-video" playsinline muted></video>
                 </div>
-                <div class="control-rack">
-                    <div class="scrubber interactable" data-label="SEEK TIME">
-                        <div class="scrub-bar" id="scrub-bar"></div>
-                        <div class="scrub-ghost"></div>
-                        <input type="range" id="seek-input" min="0" value="0" step="0.001">
-                    </div>
-                    
-                    <div style="display:flex; gap: 10px; align-items: center;">
-                        <button class="btn interactable" id="btn-prev" data-label="FRAME -1">&lt;</button>
-                        <button class="btn interactable" id="btn-play" data-label="TOGGLE">PLAY</button>
-                        <button class="btn interactable" id="btn-next" data-label="FRAME +1">&gt;</button>
-                    </div>
-
-                    <div style="display:flex; gap: 10px; align-items: center; justify-content: flex-end;">
-                        <div id="time-display" style="font-size: 0.8rem;">00:00.00</div>
-                        <button class="btn btn-main interactable" id="btn-extract" data-label="EXECUTE">EXTRACT</button>
-                    </div>
-                </div>
             </div>
 
+            <!-- CONTROLS PANEL -->
+            <div class="panel-side">
+                
+                <div class="control-group">
+                    <span class="label-text">TIMELINE SCRUBBER</span>
+                    <div class="scrub-rail">
+                        <div class="scrub-fill" id="scrub-fill"></div>
+                        <div class="scrub-head" id="scrub-head"></div>
+                        <input type="range" id="seek-slider" min="0" value="0" step="0.001">
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:5px; font-family:var(--font-code); font-size:0.7rem;">
+                        <span id="time-curr">00.00s</span>
+                        <span id="time-dur">00.00s</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <span class="label-text">PLAYBACK CONTROL</span>
+                    <div class="btn-row">
+                        <button class="cyber-btn" id="btn-prev">&lt;&lt; FRAME</button>
+                        <button class="cyber-btn" id="btn-play">PLAY</button>
+                        <button class="cyber-btn" id="btn-next">FRAME &gt;&gt;</button>
+                    </div>
+                </div>
+
+                <div class="control-group" style="margin-top: auto;">
+                    <button class="cyber-btn btn-extract" id="btn-extract">
+                        EXTRACT FRAME [LOSSLESS]
+                    </button>
+                </div>
+
+                <div class="log-box" id="sys-logs">
+                    <div class="log-entry">> KERNEL READY.</div>
+                </div>
+
+            </div>
         </div>
+
+        <!-- FOOTER -->
+        <footer>
+            <div>MEXTRACT V4.0 // DESIGNED BY MAXFLUX</div>
+            <div class="social-links">
+                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="social-item">
+                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    @maxfluxai
+                </a>
+                <a href="https://www.x.com/maxfluxai" target="_blank" class="social-item">
+                    <svg class="social-icon" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    @maxfluxai
+                </a>
+            </div>
+        </footer>
+
     </div>
 
-    <!-- WINDOW 2: SYSTEM LOG -->
-    <div class="os-window" id="win-log" style="width: 300px; height: 400px; top: 20%; left: 10%;">
-        <div class="win-header" id="drag-log">
-            <span class="win-title">KERNEL_EVENTS</span>
-            <div class="win-controls"><div class="win-btn"></div></div>
-        </div>
-        <div class="win-content">
-            <div class="term-lines" id="sys-log"></div>
-        </div>
-    </div>
-
-    <!-- WINDOW 3: AUDIO VISUALIZER -->
-    <div class="os-window" id="win-audio" style="width: 300px; height: 150px; bottom: 10%; right: 5%;">
-        <div class="win-header" id="drag-audio">
-            <span class="win-title">AUDIO_SYNTH</span>
-        </div>
-        <div class="win-content" style="padding: 0;">
-            <canvas id="audio-scope" style="width: 100%; height: 100%; opacity: 0.5;"></canvas>
-        </div>
-    </div>
-
+    <!-- HIDDEN PROCESSING CANVAS -->
+    <canvas id="proc-canvas" class="hidden"></canvas>
 
     <script>
         /* 
-        ==========================================================================
-        // MEXTRACT ENGINE CORE
-        // 3000 LINES OF LOGIC CONDENSED INTO HIGH-DENSITY JS
-        ==========================================================================
+        ================================================================
+        // SYSTEM CORE LOGIC
+        ================================================================
         */
 
-        // --- MODULE: AUDIO SYNTHESIZER ---
-        const AudioCore = {
+        // --- 1. AUDIO ENGINE (SYNTHESIS) ---
+        const AudioSys = {
             ctx: null,
             init: function() {
                 window.AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new AudioContext();
-                this.master = this.ctx.createGain();
-                this.master.gain.value = 0.1; // Keep it quiet
-                this.master.connect(this.ctx.destination);
             },
-            playTone: function(freq, type, duration) {
-                if (!this.ctx) return;
+            playClick: function() {
+                if(!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                osc.type = type;
-                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(freq * 0.5, this.ctx.currentTime + duration);
                 
-                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
                 
                 osc.connect(gain);
-                gain.connect(this.master);
+                gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + duration);
+                osc.stop(this.ctx.currentTime + 0.15);
             },
-            uiHover: function() { this.playTone(800, 'sine', 0.05); },
-            uiClick: function() { this.playTone(1200, 'square', 0.1); },
-            uiError: function() { this.playTone(150, 'sawtooth', 0.3); },
-            uiSuccess: function() { 
-                this.playTone(2000, 'sine', 0.1); 
-                setTimeout(() => this.playTone(3000, 'sine', 0.2), 100);
+            playConfirm: function() {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(400, this.ctx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.2);
             }
         };
 
-        // --- MODULE: RAIN PHYSICS ---
-        class RainSystem {
-            constructor() {
-                this.c = document.getElementById('rain-canvas');
-                this.ctx = this.c.getContext('2d');
+        // --- 2. LOGO PARTICLE SYSTEM ---
+        const LogoSys = {
+            canvas: document.getElementById('logo-canvas'),
+            ctx: null,
+            particles: [],
+            textPrimary: "MEXTRACT",
+            textSecondary: "MAXFLUXAI",
+            isAlt: false,
+            
+            init: function() {
+                this.ctx = this.canvas.getContext('2d');
                 this.resize();
                 window.addEventListener('resize', () => this.resize());
-                this.drops = [];
-                this.initDrops();
-                this.loop();
-            }
-            resize() { this.c.width = window.innerWidth; this.c.height = window.innerHeight; }
-            initDrops() {
-                for(let i=0; i<150; i++) this.drops.push(this.newDrop());
-            }
-            newDrop() {
-                return {
-                    x: Math.random() * this.c.width,
-                    y: Math.random() * this.c.height,
-                    l: Math.random() * 20 + 10, // Length (Pixel art style stretch)
-                    s: Math.random() * 10 + 10  // Speed
-                };
-            }
-            loop() {
-                this.ctx.clearRect(0,0,this.c.width,this.c.height);
-                this.ctx.fillStyle = '#fff';
-                this.drops.forEach(d => {
-                    d.y += d.s;
-                    if(d.y > this.c.height) { d.y = -20; d.x = Math.random() * this.c.width; }
-                    this.ctx.fillRect(Math.floor(d.x), Math.floor(d.y), 1, Math.floor(d.l));
+                
+                // Events
+                this.canvas.addEventListener('mouseenter', () => { this.scramble(); });
+                this.canvas.addEventListener('click', () => {
+                    this.isAlt = !this.isAlt;
+                    this.morph();
+                    AudioSys.playConfirm();
                 });
-                requestAnimationFrame(() => this.loop());
-            }
-        }
 
-        // --- MODULE: PARTICLE LOGO MORPH ---
-        class LogoEngine {
-            constructor() {
-                this.c = document.getElementById('logo-canvas');
-                this.ctx = this.c.getContext('2d');
-                this.textA = "MEXTRACT";
-                this.textB = "MAXFLUXAI";
-                this.particles = [];
-                this.target = "A";
-                this.mouseOver = false;
-                
-                this.c.addEventListener('mouseenter', () => { this.target = "B"; this.mouseOver = true; AudioCore.uiHover(); });
-                this.c.addEventListener('mouseleave', () => { this.target = "A"; this.mouseOver = false; });
-                
-                this.init();
+                this.morph(); // Initial Render
                 this.animate();
-            }
+            },
             
-            getPoints(text) {
-                const tmp = document.createElement('canvas');
-                tmp.width = 400; tmp.height = 100;
-                const tctx = tmp.getContext('2d');
-                tctx.font = '900 40px "JetBrains Mono"';
-                tctx.fillStyle = '#fff';
-                tctx.textAlign = 'center';
-                tctx.textBaseline = 'middle';
-                tctx.fillText(text, 200, 50);
+            resize: function() {
+                const parent = this.canvas.parentElement;
+                this.canvas.width = parent.offsetWidth;
+                this.canvas.height = parent.offsetHeight;
+                this.morph(); // Re-calc positions
+            },
+
+            // Get pixel coordinates of text
+            getTextPoints: function(text) {
+                const temp = document.createElement('canvas');
+                temp.width = this.canvas.width; 
+                temp.height = this.canvas.height;
+                const tctx = temp.getContext('2d');
                 
-                const data = tctx.getImageData(0,0,400,100).data;
+                tctx.font = '900 30px "Orbitron"';
+                tctx.fillStyle = '#fff';
+                tctx.textAlign = 'left';
+                tctx.textBaseline = 'middle';
+                tctx.fillText(text, 10, temp.height/2);
+                
+                const data = tctx.getImageData(0,0,temp.width,temp.height).data;
                 const points = [];
-                for(let y=0; y<100; y+=3) {
-                    for(let x=0; x<400; x+=3) {
-                        if(data[(y*400+x)*4+3] > 128) points.push({x,y});
+                const step = 2; // Density
+                
+                for(let y=0; y<temp.height; y+=step) {
+                    for(let x=0; x<temp.width; x+=step) {
+                        if(data[(y*temp.width+x)*4+3] > 128) {
+                            points.push({x, y});
+                        }
                     }
                 }
                 return points;
-            }
+            },
 
-            init() {
-                this.ptsA = this.getPoints(this.textA);
-                this.ptsB = this.getPoints(this.textB);
-                const max = Math.max(this.ptsA.length, this.ptsB.length);
+            morph: function() {
+                const targetTxt = this.isAlt ? this.textSecondary : this.textPrimary;
+                const targets = this.getTextPoints(targetTxt);
                 
-                for(let i=0; i<max; i++) {
-                    this.particles.push({
-                        x: Math.random()*400, y: Math.random()*100,
-                        vx: 0, vy: 0
-                    });
+                // Adjust particle count
+                if(this.particles.length < targets.length) {
+                    const add = targets.length - this.particles.length;
+                    for(let i=0; i<add; i++) this.particles.push({x:Math.random()*200, y:Math.random()*50, vx:0, vy:0});
+                } else {
+                    this.particles.splice(targets.length);
                 }
-            }
-
-            animate() {
-                this.ctx.clearRect(0,0,400,100);
-                this.ctx.fillStyle = '#fff';
                 
-                const targets = this.target === "A" ? this.ptsA : this.ptsB;
-                
+                // Assign targets
                 this.particles.forEach((p, i) => {
-                    let tx, ty;
-                    if(targets[i]) {
-                        tx = targets[i].x;
-                        ty = targets[i].y;
-                    } else {
-                        tx = 200; ty = 50; // Center fallback
-                    }
+                    p.tx = targets[i].x;
+                    p.ty = targets[i].y;
+                });
+            },
+
+            scramble: function() {
+                this.particles.forEach(p => {
+                    p.vx = (Math.random()-0.5) * 10;
+                    p.vy = (Math.random()-0.5) * 10;
+                });
+                AudioSys.playClick();
+            },
+
+            animate: function() {
+                this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = '#ffffff';
+                
+                this.particles.forEach(p => {
+                    const dx = p.tx - p.x;
+                    const dy = p.ty - p.y;
                     
-                    const dx = tx - p.x;
-                    const dy = ty - p.y;
-                    
-                    p.vx += dx * 0.03; // Spring
-                    p.vy += dy * 0.03;
-                    p.vx *= 0.85;      // Damp
+                    p.vx += dx * 0.05;
+                    p.vy += dy * 0.05;
+                    p.vx *= 0.85; // Friction
                     p.vy *= 0.85;
-                    
-                    if(this.mouseOver) {
-                        p.x += (Math.random()-0.5)*2; // Jitter
-                        p.y += (Math.random()-0.5)*2;
-                    }
                     
                     p.x += p.vx;
                     p.y += p.vy;
                     
-                    if(targets[i]) this.ctx.fillRect(p.x, p.y, 2, 2);
+                    this.ctx.fillRect(p.x, p.y, 1.5, 1.5);
                 });
                 requestAnimationFrame(() => this.animate());
             }
-        }
+        };
 
-        // --- MODULE: WINDOW MANAGER ---
-        class WindowManager {
-            constructor() {
-                this.windows = document.querySelectorAll('.os-window');
-                this.zIndex = 100;
-                this.dragTarget = null;
-                this.offset = {x:0, y:0};
+        // --- 3. RAIN SYSTEM (OPTIMIZED) ---
+        const RainSys = {
+            canvas: document.getElementById('rain-canvas'),
+            init: function() {
+                const ctx = this.canvas.getContext('2d');
+                let w, h;
+                const drops = [];
                 
-                this.windows.forEach(w => {
-                    w.addEventListener('mousedown', () => this.focus(w));
-                    const header = w.querySelector('.win-header');
-                    if(header) header.addEventListener('mousedown', (e) => this.startDrag(e, w));
-                });
+                const resize = () => {
+                    w = this.canvas.width = window.innerWidth;
+                    h = this.canvas.height = window.innerHeight;
+                    drops.length = 0;
+                    for(let i=0; i<100; i++) drops.push({
+                        x: Math.random()*w,
+                        y: Math.random()*h,
+                        l: Math.random()*10+5,
+                        s: Math.random()*5+5
+                    });
+                };
+                window.addEventListener('resize', resize);
+                resize();
 
-                document.addEventListener('mousemove', (e) => this.drag(e));
-                document.addEventListener('mouseup', () => this.endDrag());
+                function loop() {
+                    ctx.clearRect(0,0,w,h);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.globalAlpha = 0.3;
+                    
+                    drops.forEach(d => {
+                        d.y += d.s;
+                        if(d.y > h) { d.y = -20; d.x = Math.random()*w; }
+                        ctx.fillRect(d.x, d.y, 1, d.l);
+                    });
+                    requestAnimationFrame(loop);
+                }
+                loop();
             }
-            
-            focus(win) {
-                this.zIndex++;
-                win.style.zIndex = this.zIndex;
-                win.classList.add('active');
-                this.windows.forEach(w => { if(w !== win) w.classList.remove('active'); });
-            }
+        };
 
-            startDrag(e, win) {
-                this.dragTarget = win;
-                const rect = win.getBoundingClientRect();
-                this.offset.x = e.clientX - rect.left;
-                this.offset.y = e.clientY - rect.top;
-                // Convert transform translate to top/left for easier dragging
-                win.style.transform = 'none'; 
-                win.style.left = rect.left + 'px';
-                win.style.top = rect.top + 'px';
-                win.style.width = rect.width + 'px';
-                win.style.height = rect.height + 'px';
-            }
-
-            drag(e) {
-                if(!this.dragTarget) return;
-                this.dragTarget.style.left = (e.clientX - this.offset.x) + 'px';
-                this.dragTarget.style.top = (e.clientY - this.offset.y) + 'px';
-            }
-
-            endDrag() { this.dragTarget = null; }
-        }
-
-        // --- MODULE: APP LOGIC & VIDEO ---
+        // --- 4. APP LOGIC ---
         const App = {
             els: {
-                boot: document.getElementById('boot-sequence'),
-                bootProg: document.getElementById('boot-prog'),
-                winMain: document.getElementById('win-main'),
-                log: document.getElementById('sys-log'),
-                upload: document.getElementById('stack-upload'),
-                editor: document.getElementById('stack-editor'),
+                loader: document.getElementById('sys-loader'),
+                shell: document.getElementById('app-shell'),
+                upload: document.getElementById('upload-trigger'),
+                videoStage: document.getElementById('video-stage'),
                 video: document.getElementById('main-video'),
                 fileIn: document.getElementById('file-input'),
-                seek: document.getElementById('seek-input'),
-                scrub: document.getElementById('scrub-bar'),
-                time: document.getElementById('time-display')
+                slider: document.getElementById('seek-slider'),
+                scrubHead: document.getElementById('scrub-head'),
+                scrubFill: document.getElementById('scrub-fill'),
+                logs: document.getElementById('sys-logs'),
+                clock: document.getElementById('clock'),
+                btnPlay: document.getElementById('btn-play')
             },
             
-            log: function(msg, type) {
-                const d = document.createElement('div');
-                d.className = 'log-entry' + (type ? ' log-'+type : '');
-                d.innerText = `> ${msg}`;
-                this.els.log.prepend(d);
-            },
-
-            boot: function() {
-                // Simulate BIOS
-                let p = 0;
-                const int = setInterval(() => {
-                    p += Math.random()*10;
-                    if(p > 100) p = 100;
-                    this.els.bootProg.style.width = p + '%';
-                    if(p === 100) {
-                        clearInterval(int);
-                        setTimeout(() => {
-                            this.els.boot.classList.add('hidden');
-                            document.querySelectorAll('.os-window').forEach(w => w.classList.add('visible'));
-                            this.log("SYSTEM ONLINE", "succ");
-                            AudioCore.init();
-                        }, 500);
-                    }
-                }, 100);
+            log: function(msg) {
+                const div = document.createElement('div');
+                div.className = 'log-entry';
+                div.innerText = `> ${msg}`;
+                this.els.logs.prepend(div);
             },
 
             init: function() {
-                this.boot();
-                new RainSystem();
-                new LogoEngine();
-                new WindowManager();
+                RainSys.init();
+                LogoSys.init();
+                
+                // Clock
+                setInterval(() => {
+                    const d = new Date();
+                    this.els.clock.innerText = d.toLocaleTimeString('en-GB');
+                }, 1000);
 
-                // Upload Handlers
-                this.els.upload.addEventListener('click', () => this.els.fileIn.click());
+                // Boot Button
+                document.getElementById('init-btn').addEventListener('click', () => {
+                    AudioSys.init();
+                    AudioSys.playConfirm();
+                    this.els.loader.style.transform = "translateY(-100%)";
+                    this.els.shell.classList.add('active');
+                });
+
+                // Upload Logic
+                this.els.upload.addEventListener('click', () => AudioSys.playClick());
                 this.els.fileIn.addEventListener('change', (e) => this.loadVideo(e.target.files[0]));
                 
-                // Video Handlers
-                const v = this.els.video;
-                document.getElementById('btn-play').addEventListener('click', () => {
-                    if(v.paused) { v.play(); this.log("PLAYBACK START"); }
-                    else { v.pause(); this.log("PLAYBACK HALT"); }
-                    AudioCore.uiClick();
-                });
+                // Controls
+                this.els.btnPlay.addEventListener('click', () => this.togglePlay());
                 
-                // Seeking
-                this.els.seek.addEventListener('input', (e) => {
-                    v.currentTime = e.target.value;
-                    v.pause();
-                    this.updateScrub();
+                this.els.slider.addEventListener('input', (e) => {
+                    this.els.video.currentTime = e.target.value;
+                    this.updateUI();
                 });
-                v.addEventListener('timeupdate', () => {
-                    this.els.seek.value = v.currentTime;
-                    this.updateScrub();
-                });
+                this.els.slider.addEventListener('mousedown', () => this.els.video.pause());
 
-                // Frame Steps
-                const F = 0.04;
-                document.getElementById('btn-prev').addEventListener('click', () => { v.currentTime -= F; v.pause(); AudioCore.uiClick(); });
-                document.getElementById('btn-next').addEventListener('click', () => { v.currentTime += F; v.pause(); AudioCore.uiClick(); });
+                // Frame Stepping
+                const FRAME = 0.04;
+                document.getElementById('btn-prev').addEventListener('click', () => {
+                    this.els.video.currentTime -= FRAME;
+                    this.els.video.pause();
+                    AudioSys.playClick();
+                });
+                document.getElementById('btn-next').addEventListener('click', () => {
+                    this.els.video.currentTime += FRAME;
+                    this.els.video.pause();
+                    AudioSys.playClick();
+                });
 
                 // Extract
-                document.getElementById('btn-extract').addEventListener('click', () => this.extract());
+                document.getElementById('btn-extract').addEventListener('click', () => this.extractFrame());
 
-                // Cursor Interaction
-                document.querySelectorAll('.interactable').forEach(el => {
-                    el.addEventListener('mouseenter', () => { AudioCore.uiHover(); document.body.classList.add('state-hover'); });
-                    el.addEventListener('mouseleave', () => { document.body.classList.remove('state-hover'); });
-                    el.addEventListener('mousedown', () => { AudioCore.uiClick(); document.body.classList.add('state-active'); });
-                    el.addEventListener('mouseup', () => { document.body.classList.remove('state-active'); });
-                });
-                
-                // Mouse tracking
-                const cx = document.querySelector('.cursor-main');
-                const cd = document.querySelector('.cursor-dot');
-                const clx = document.querySelector('.cursor-x-line');
-                const cly = document.querySelector('.cursor-y-line');
-                
-                document.addEventListener('mousemove', e => {
-                    cx.style.left = e.clientX + 'px'; cx.style.top = e.clientY + 'px';
-                    cd.style.left = e.clientX + 'px'; cd.style.top = e.clientY + 'px';
-                    clx.style.top = e.clientY + 'px';
-                    cly.style.left = e.clientX + 'px';
-                });
+                // Video Loop
+                this.els.video.addEventListener('timeupdate', () => this.updateUI());
             },
 
             loadVideo: function(file) {
                 if(!file) return;
-                this.log("MOUNTING DRIVE...", "warn");
+                this.log("LOADING DATA STREAM...");
                 const url = URL.createObjectURL(file);
                 this.els.video.src = url;
                 this.els.video.onloadedmetadata = () => {
-                    this.els.upload.classList.add('hidden');
-                    this.els.editor.classList.remove('hidden');
-                    this.els.seek.max = this.els.video.duration;
-                    this.log("VIDEO STREAM ACTIVE", "succ");
-                    this.log(`RES: ${this.els.video.videoWidth}x${this.els.video.videoHeight}`);
-                    AudioCore.uiSuccess();
+                    this.els.upload.style.display = 'none';
+                    this.els.videoStage.style.display = 'flex';
+                    this.els.slider.max = this.els.video.duration;
+                    document.getElementById('time-dur').innerText = this.els.video.duration.toFixed(2) + 's';
+                    this.log("VIDEO MOUNTED SUCCESSFULLY.");
+                    AudioSys.playConfirm();
                 };
             },
 
-            updateScrub: function() {
-                const pct = (this.els.video.currentTime / this.els.video.duration) * 100;
-                this.els.scrub.style.width = pct + "%";
-                this.els.time.innerText = this.els.video.currentTime.toFixed(2);
+            togglePlay: function() {
+                if(this.els.video.paused) {
+                    this.els.video.play();
+                    this.els.btnPlay.innerText = "PAUSE";
+                    this.log("PLAYBACK: STARTED");
+                } else {
+                    this.els.video.pause();
+                    this.els.btnPlay.innerText = "PLAY";
+                    this.log("PLAYBACK: PAUSED");
+                }
+                AudioSys.playClick();
             },
 
-            extract: function() {
+            updateUI: function() {
+                const v = this.els.video;
+                const pct = (v.currentTime / v.duration) * 100;
+                this.els.scrubFill.style.width = pct + "%";
+                this.els.scrubHead.style.left = pct + "%";
+                document.getElementById('time-curr').innerText = v.currentTime.toFixed(2) + 's';
+                if(document.activeElement !== this.els.slider) this.els.slider.value = v.currentTime;
+            },
+
+            extractFrame: function() {
                 if(this.els.video.readyState < 2) return;
-                this.log("INITIATING FRAME CAPTURE...", "warn");
+                this.log("EXTRACTING FRAME...");
                 
-                const cvs = document.createElement('canvas');
-                cvs.width = this.els.video.videoWidth;
-                cvs.height = this.els.video.videoHeight;
-                const ctx = cvs.getContext('2d');
-                ctx.drawImage(this.els.video, 0, 0, cvs.width, cvs.height);
+                const canvas = document.getElementById('proc-canvas');
+                canvas.width = this.els.video.videoWidth;
+                canvas.height = this.els.video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this.els.video, 0, 0, canvas.width, canvas.height);
                 
                 try {
-                    const data = cvs.toDataURL('image/png');
-                    const a = document.createElement('a');
-                    a.href = data;
-                    a.download = `FRAME_${Date.now()}.png`;
-                    a.click();
-                    this.log("FRAME SAVED TO DISK", "succ");
-                    AudioCore.uiSuccess();
+                    const data = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `MEXTRACT_FRAME_${Date.now()}.png`;
+                    link.href = data;
+                    link.click();
+                    this.log("FRAME SAVED TO DEVICE.");
+                    AudioSys.playConfirm();
                 } catch(e) {
-                    this.log("ERR: SECURITY BLOCK (CORS)", "warn");
-                    AudioCore.uiError();
+                    this.log("ERROR: BROWSER SECURITY PREVENTED DOWNLOAD.");
                 }
             }
         };
 
-        // --- MODULE: AUDIO VISUALIZER (SIMULATED) ---
-        (function() {
-            const c = document.getElementById('audio-scope');
-            const ctx = c.getContext('2d');
-            let data = new Array(50).fill(0);
-            
-            function loop() {
-                data.shift();
-                data.push(Math.random());
-                
-                c.width = c.offsetWidth; c.height = c.offsetHeight;
-                ctx.clearRect(0,0,c.width,c.height);
-                ctx.strokeStyle = '#ffffff';
-                ctx.beginPath();
-                
-                const step = c.width / 50;
-                data.forEach((v, i) => {
-                    const h = v * c.height;
-                    if(i==0) ctx.moveTo(i*step, (c.height-h)/2);
-                    else ctx.lineTo(i*step, (c.height-h)/2 + (Math.random()*h));
-                });
-                ctx.stroke();
-                requestAnimationFrame(loop);
-            }
-            loop();
-        })();
-
-        // START SYSTEM
+        // Start
         window.addEventListener('load', () => App.init());
 
     </script>
