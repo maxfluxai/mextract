@@ -2,687 +2,668 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MEXTRACT</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEXTRACT // NULL_VOID</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
 
     <style>
-        /* 
-        ================================================================
-        // CORE CONFIGURATION
-        ================================================================
-        */
         :root {
-            --bg-core: #000000;
-            --panel-bg: rgba(10, 10, 10, 0.85);
-            --fg-primary: #ffffff;
-            --fg-dim: #666666;
-            --accent: #ffffff;
-            --border: 1px solid #333;
-            --font-head: 'Orbitron', sans-serif;
-            --font-ui: 'Rajdhani', sans-serif;
-            --font-code: 'JetBrains Mono', monospace;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            outline: none;
-            -webkit-tap-highlight-color: transparent;
+            --bg-color: #000000;
+            --fg-color: #ffffff;
+            --dim-color: #333333;
+            --glitch-color: #888888;
         }
 
         body {
-            background-color: var(--bg-core);
-            color: var(--fg-primary);
-            font-family: var(--font-ui);
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            background-color: var(--bg-color);
+            color: var(--fg-color);
+            font-family: 'Share Tech Mono', monospace;
+            overflow-x: hidden;
+            cursor: crosshair;
         }
 
-        /* --- RAIN BACKGROUND (GLOBAL) --- */
-        #rain-canvas {
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; border-left: 1px solid #333; }
+        ::-webkit-scrollbar-thumb { background: #fff; }
+
+        /* CRT Scanline Effect */
+        .scanlines {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
             pointer-events: none;
-        }
-
-        /* --- SCANLINES --- */
-        .scanline-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.2) 3px
-            );
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        /* --- LOADING SCREEN (1.5s) --- */
-        #loader {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease, visibility 0.5s;
+            z-index: 999;
+            animation: scrollScan 10s linear infinite;
         }
         
-        .loader-bar-wrap {
-            width: 200px;
-            height: 2px;
+        .flicker {
+            animation: flicker 0.15s infinite;
+            pointer-events: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.02);
+            z-index: 998;
+        }
+
+        @keyframes scrollScan {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100%; }
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.9; }
+            50% { opacity: 1.0; }
+            100% { opacity: 0.95; }
+        }
+
+        /* Glitch Text */
+        .glitch {
+            position: relative;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: black;
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 #fff;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 #999;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 30px, 0); }
+            20% { clip: rect(80px, 9999px, 100px, 0); }
+            40% { clip: rect(10px, 9999px, 80px, 0); }
+            60% { clip: rect(40px, 9999px, 60px, 0); }
+            80% { clip: rect(90px, 9999px, 20px, 0); }
+            100% { clip: rect(10px, 9999px, 50px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(60px, 9999px, 80px, 0); }
+            20% { clip: rect(10px, 9999px, 30px, 0); }
+            40% { clip: rect(90px, 9999px, 100px, 0); }
+            60% { clip: rect(20px, 9999px, 40px, 0); }
+            80% { clip: rect(50px, 9999px, 70px, 0); }
+            100% { clip: rect(30px, 9999px, 90px, 0); }
+        }
+
+        /* Cyberpunk Controls */
+        .cy-button {
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 10px 20px;
+            position: relative;
+            transition: all 0.1s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+        .cy-button:hover:not(:disabled) {
+            background: #fff;
+            color: #000;
+            text-shadow: 0 0 5px rgba(255,255,255,0.8);
+            cursor: pointer;
+        }
+        .cy-button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        .cy-button:disabled {
+            border-color: #333;
+            color: #333;
+            cursor: not-allowed;
+        }
+
+        .cy-input {
+            background: #000;
+            border: 1px solid #333;
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            outline: none;
+        }
+        .cy-input:focus {
+            border-color: #fff;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        /* Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 10px;
+            background: #fff;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 5px #fff;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #333;
+            border: 1px solid #555;
+        }
+
+        /* Loading Screen */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+        .loader-bar {
+            width: 300px;
+            height: 4px;
             background: #333;
             margin-top: 20px;
             position: relative;
             overflow: hidden;
         }
-        .loader-bar {
-            width: 0%;
-            height: 100%;
-            background: #fff;
+        .loader-fill {
             position: absolute;
             top: 0; left: 0;
-            /* CHANGED: Duration 1.5s */
-            animation: loadAnim 1.5s linear forwards;
-        }
-        .loader-text {
-            font-family: var(--font-head);
-            letter-spacing: 4px;
-            animation: pulse 0.2s infinite; /* Faster pulse for hype */
-        }
-
-        /* --- MAIN APP LAYOUT --- */
-        #app-interface {
-            position: relative;
-            z-index: 10;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            opacity: 0;
-            transition: opacity 1s ease;
-            max-width: 1600px;
-            margin: 0 auto;
-            width: 100%;
+            background: #fff;
+            width: 0%;
+            animation: loadFill 2s ease-in-out forwards;
         }
-        #app-interface.active { opacity: 1; }
-
-        /* HEADER */
-        header {
-            height: 70px;
-            border-bottom: var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            background: var(--panel-bg);
-            backdrop-filter: blur(5px);
-        }
-        
-        #logo-container {
-            width: 250px; /* Slightly wider for animation space */
-            height: 60px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
+        @keyframes loadFill {
+            0% { width: 0%; }
+            20% { width: 10%; }
+            40% { width: 45%; }
+            60% { width: 50%; }
+            100% { width: 100%; }
         }
 
-        /* WORKSPACE (Split View) */
-        .workspace {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
+        /* Terminal Output */
+        .terminal-log {
+            font-family: 'VT323', monospace;
+            font-size: 1.1rem;
+            line-height: 1.2;
         }
-
-        /* LEFT: VIDEO AREA */
-        .panel-video {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: var(--border);
-            position: relative;
-            background: rgba(0,0,0,0.3);
-        }
-
-        /* RIGHT: CONTROLS */
-        .panel-controls {
-            width: 360px;
-            background: var(--panel-bg);
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            gap: 25px;
-            overflow-y: auto;
-        }
-
-        /* UPLOAD COMPONENT */
-        .upload-zone {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 1px dashed #333;
-            margin: 20px;
-            transition: 0.3s;
-            cursor: pointer;
-        }
-        .upload-zone:hover {
-            border-color: #fff;
-            background: rgba(255,255,255,0.05);
-        }
-        .upload-icon { font-size: 4rem; font-weight: 100; margin-bottom: 10px; }
-
-        /* VIDEO PLAYER */
-        .video-wrapper {
-            display: none;
-            width: 100%;
-            height: 100%;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            position: relative;
-        }
-        video {
-            max-width: 100%;
-            max-height: 100%;
-            display: block;
-        }
-
-        /* CONTROL WIDGETS */
-        .widget { display: flex; flex-direction: column; gap: 8px; }
-        .widget-label {
-            font-family: var(--font-head);
-            font-size: 0.7rem;
-            color: var(--fg-dim);
-            letter-spacing: 1px;
-        }
-
-        /* SCRUBBER */
-        .scrub-track {
-            width: 100%; height: 30px;
-            background: #111;
-            border: 1px solid #333;
-            position: relative;
-            cursor: crosshair;
-        }
-        .scrub-fill {
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
-            background: #fff; pointer-events: none;
-        }
-        .scrub-thumb {
-            position: absolute; top: 0; left: 0; width: 2px; height: 100%;
-            background: #fff; box-shadow: 0 0 10px #fff;
-            pointer-events: none; transform: translateX(-50%);
-        }
-        input[type=range] {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0; cursor: pointer;
-        }
-
-        /* BUTTONS */
-        .btn-group { display: flex; gap: 10px; }
-        .cyber-btn {
-            flex: 1;
-            background: transparent;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 12px;
-            font-family: var(--font-ui);
-            font-weight: 700;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .cyber-btn:hover { background: #fff; color: #000; }
-        
-        .btn-primary { border-color: #fff; background: rgba(255,255,255,0.05); }
-        .btn-primary:hover { box-shadow: 0 0 15px rgba(255,255,255,0.5); }
-
-        /* FOOTER */
-        footer {
-            height: 50px;
-            border-top: var(--border);
-            background: var(--panel-bg);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            font-size: 0.8rem;
-            color: var(--fg-dim);
-        }
-        .socials { display: flex; gap: 20px; }
-        .social-link {
-            color: var(--fg-dim); text-decoration: none;
-            display: flex; align-items: center; gap: 8px; transition: 0.3s;
-        }
-        .social-link:hover { color: #fff; }
-        .icon { width: 16px; height: 16px; fill: currentColor; }
-
-        /* RESPONSIVE LAYOUT */
-        @media (max-width: 900px) {
-            .workspace { flex-direction: column; }
-            .panel-video { height: 50vh; border-right: none; border-bottom: var(--border); }
-            .panel-controls { width: 100%; height: 50vh; padding: 15px; }
-            .upload-icon { font-size: 2.5rem; }
-            .cyber-btn { padding: 14px; font-size: 0.9rem; }
-        }
-
-        /* ANIMATIONS */
-        @keyframes loadAnim { 0% { width: 0%; } 100% { width: 100%; } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .hidden { display: none !important; }
-
     </style>
 </head>
-<body>
+<body class="h-screen flex flex-col justify-between selection:bg-white selection:text-black">
 
-    <!-- RAIN LAYER -->
-    <canvas id="rain-canvas"></canvas>
-    <div class="scanline-overlay"></div>
+    <!-- AUDIO SYSTEM (Invisible) -->
+    <div id="audio-root"></div>
+
+    <!-- OVERLAYS -->
+    <div class="scanlines"></div>
+    <div class="flicker"></div>
 
     <!-- LOADING SCREEN -->
     <div id="loader">
-        <div class="loader-text">MEXTRACT</div>
-        <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
-        <div style="margin-top: 10px; font-family: var(--font-code); font-size: 0.7rem; color: #666;">
-            INITIALIZING CORE...
-        </div>
+        <h1 class="text-4xl md:text-6xl font-bold tracking-widest glitch" data-text="MEXTRACT">MEXTRACT</h1>
+        <p class="mt-4 text-sm animate-pulse">INITIALIZING CORE PROTOCOLS...</p>
+        <div class="loader-bar"><div class="loader-fill"></div></div>
     </div>
 
     <!-- MAIN APP -->
-    <div id="app-interface">
+    <div class="relative z-10 container mx-auto p-4 flex-grow flex flex-col">
         
-        <header>
-            <div id="logo-container">
-                <canvas id="logo-canvas"></canvas>
+        <!-- HEADER -->
+        <header class="border-b-2 border-white pb-4 mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tighter">MEXTRACT <span class="text-xs align-top ml-2 opacity-50">v.1.0.4</span></h1>
+                <p class="text-xs text-gray-400">LOSSLESS FRAME EXTRACTION UNIT</p>
             </div>
-            <div style="font-family: var(--font-code); font-size: 0.8rem; opacity: 0.7;" id="clock">
-                00:00:00
+            <div class="text-right hidden md:block">
+                <p class="text-xs" id="clock">00:00:00</p>
+                <p class="text-xs text-green-500">SYS: ONLINE</p>
             </div>
         </header>
 
-        <div class="workspace">
+        <!-- CONTENT GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
             
-            <!-- LEFT PANEL -->
-            <div class="panel-video">
-                <label class="upload-zone" id="upload-trigger">
-                    <div class="upload-icon">+</div>
-                    <div style="letter-spacing: 2px;">UPLOAD VIDEO</div>
-                    <div style="font-family: var(--font-code); font-size: 0.7rem; opacity: 0.5; margin-top: 5px;">MP4 . MOV . WEBM</div>
-                    <input type="file" id="file-input" accept="video/*" hidden>
-                </label>
-
-                <div class="video-wrapper" id="video-wrapper">
-                    <video id="main-video" playsinline muted></video>
+            <!-- LEFT COLUMN: DISPLAY & CONTROLS -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                
+                <!-- DROP ZONE / VIDEO PLAYER -->
+                <div id="drop-zone" class="border-2 border-dashed border-gray-600 h-64 md:h-96 flex flex-col justify-center items-center transition-all hover:border-white hover:bg-gray-900 relative overflow-hidden group cursor-pointer">
+                    <input type="file" id="file-input" accept="video/*" class="absolute inset-0 opacity-0 cursor-pointer z-20">
+                    <div class="text-center z-10 pointer-events-none group-hover:scale-110 transition-transform">
+                        <div class="text-4xl mb-2">＋</div>
+                        <p class="text-sm tracking-widest">INITIATE DATA UPLOAD</p>
+                        <p class="text-xs text-gray-500 mt-2">[DRAG VIDEO OR CLICK]</p>
+                    </div>
+                    
+                    <video id="main-video" class="absolute inset-0 w-full h-full object-contain hidden bg-black z-10"></video>
+                    <!-- Hidden canvas for processing -->
+                    <canvas id="proc-canvas" class="hidden"></canvas>
                 </div>
+
+                <!-- PLAYBACK CONTROLS -->
+                <div class="border border-gray-800 p-4 bg-black/50 backdrop-blur-sm">
+                    
+                    <!-- TIMELINE SLIDER -->
+                    <div class="mb-4 flex items-center gap-4">
+                        <span class="text-xs font-mono w-16" id="current-time">00:00</span>
+                        <input type="range" id="seek-slider" min="0" max="100" value="0" disabled>
+                        <span class="text-xs font-mono w-16 text-right" id="total-time">00:00</span>
+                    </div>
+
+                    <!-- BUTTONS -->
+                    <div class="flex flex-wrap justify-center gap-2">
+                        <button id="btn-prev" class="cy-button py-1 px-3" title="Prev Frame" disabled>&lt;</button>
+                        <button id="btn-play" class="cy-button py-1 px-6" disabled>PLAY</button>
+                        <button id="btn-pause" class="cy-button py-1 px-6 hidden">STOP</button>
+                        <button id="btn-next" class="cy-button py-1 px-3" title="Next Frame" disabled>&gt;</button>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- RIGHT PANEL -->
-            <div class="panel-controls">
+            <!-- RIGHT COLUMN: EXTRACTION TERMINAL -->
+            <div class="border-l-0 lg:border-l border-gray-800 pl-0 lg:pl-6 flex flex-col gap-4">
                 
-                <div class="widget">
-                    <div class="widget-label">TIMELINE</div>
-                    <div class="scrub-track">
-                        <div class="scrub-fill" id="scrub-fill"></div>
-                        <div class="scrub-thumb" id="scrub-head"></div>
-                        <input type="range" id="seek-bar" min="0" value="0" step="0.001">
+                <div class="bg-gray-900/30 p-4 border border-gray-700">
+                    <h2 class="text-lg font-bold border-b border-gray-600 mb-4 pb-2">EXTRACTION MODULE</h2>
+                    
+                    <!-- RANGE MARKERS -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div class="bg-black border border-gray-600 p-2">
+                            <p class="text-xs text-gray-500">START MARKER</p>
+                            <div class="flex justify-between items-center">
+                                <span id="start-time-display" class="text-lg">0.00s</span>
+                                <button id="btn-set-start" class="text-xs border border-white px-2 py-1 hover:bg-white hover:text-black" disabled>SET</button>
+                            </div>
+                        </div>
+                        <div class="bg-black border border-gray-600 p-2">
+                            <p class="text-xs text-gray-500">END MARKER</p>
+                            <div class="flex justify-between items-center">
+                                <span id="end-time-display" class="text-lg">0.00s</span>
+                                <button id="btn-set-end" class="text-xs border border-white px-2 py-1 hover:bg-white hover:text-black" disabled>SET</button>
+                            </div>
+                        </div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-family: var(--font-code); font-size: 0.7rem;">
-                        <span id="t-curr">00.00s</span>
-                        <span id="t-dur">00.00s</span>
+
+                    <!-- ACTIONS -->
+                    <div class="flex flex-col gap-2">
+                        <button id="btn-snap" class="cy-button w-full text-sm" disabled>EXTRACT CURRENT FRAME (1)</button>
+                        <button id="btn-range" class="cy-button w-full text-sm" disabled>EXTRACT RANGE [.ZIP]</button>
+                        <button id="btn-full" class="cy-button w-full text-sm border-red-500 text-red-100 hover:bg-red-600" disabled>EXTRACT FULL VIDEO</button>
                     </div>
                 </div>
 
-                <div class="widget">
-                    <div class="widget-label">NAVIGATION</div>
-                    <div class="btn-group">
-                        <button class="cyber-btn" id="btn-back">&lt; FRAME</button>
-                        <button class="cyber-btn" id="btn-play">PLAY</button>
-                        <button class="cyber-btn" id="btn-fwd">FRAME &gt;</button>
+                <!-- STATUS LOG -->
+                <div class="flex-grow border border-gray-800 bg-black p-2 relative overflow-hidden h-48 lg:h-auto">
+                    <div class="absolute top-0 left-0 bg-white text-black text-xs px-2">SYS_LOG</div>
+                    <div id="console-output" class="terminal-log mt-6 h-full overflow-y-auto text-gray-400 pb-8">
+                        <p>> SYSTEM INITIALIZED...</p>
+                        <p>> WAITING FOR MEDIA INPUT...</p>
                     </div>
-                </div>
-
-                <div style="flex: 1;"></div>
-
-                <div class="widget">
-                    <div class="widget-label">EXTRACTION PROTOCOLS</div>
-                    <button class="cyber-btn btn-primary" id="btn-png">
-                        EXTRACT PNG (LOSSLESS)
-                    </button>
-                    <button class="cyber-btn btn-primary" id="btn-jpg" style="margin-top: 10px; border-color: #666; opacity: 0.8;">
-                        EXTRACT JPG (COMPRESSED)
-                    </button>
                 </div>
 
             </div>
         </div>
 
-        <footer>
-            <div>POWERED BY MAXFLUX AI</div>
-            <div class="socials">
-                <a href="https://www.instagram.com/maxfluxai" target="_blank" class="social-link">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                    @maxfluxai
-                </a>
-                <a href="https://www.x.com/maxfluxai" target="_blank" class="social-link">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    @maxfluxai
-                </a>
-            </div>
-        </footer>
-
     </div>
 
-    <!-- OFFSCREEN CANVAS -->
-    <canvas id="proc-canvas" class="hidden"></canvas>
+    <!-- FOOTER -->
+    <footer class="relative z-10 border-t border-gray-800 p-4 bg-black text-center md:text-left flex flex-col md:flex-row justify-between items-center">
+        <div class="text-xs text-gray-500 mb-2 md:mb-0">
+            MEXTRACT © 2077 // MAXFLUX AI CORP
+        </div>
+        <div class="flex gap-6 text-sm font-bold tracking-wider">
+            <a href="https://x.com/maxfluxai" target="_blank" class="hover:text-gray-400 hover:underline decoration-dotted transition-colors">X.COM/MAXFLUXAI</a>
+            <a href="https://instagram.com/maxfluxai" target="_blank" class="hover:text-gray-400 hover:underline decoration-dotted transition-colors">INSTAGRAM.COM/MAXFLUXAI</a>
+        </div>
+    </footer>
 
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        /* 
-        ================================================================
-        // SYSTEM KERNEL
-        ================================================================
-        */
-
         // --- AUDIO SYSTEM ---
-        const AudioSys = {
-            ctx: null,
-            ready: false,
-            init: function() {
-                if(this.ready) return;
-                window.AudioContext = window.AudioContext || window.webkitAudioContext;
-                this.ctx = new AudioContext();
-                this.ready = true;
-            },
-            tone: function(freq, type, dur) {
-                if(!this.ready) { this.init(); return; }
+        class SoundFX {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.value = 0.3;
+                this.masterGain.connect(this.ctx.destination);
+            }
+
+            playTone(freq, type, duration) {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + dur);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
                 osc.connect(gain);
-                gain.connect(this.ctx.destination);
+                gain.connect(this.masterGain);
                 osc.start();
-                osc.stop(this.ctx.currentTime + dur);
-            },
-            click: function() { this.tone(1000, 'sine', 0.1); },
-            success: function() { this.tone(600, 'square', 0.1); setTimeout(()=>this.tone(1200,'sine',0.2), 100); }
-        };
-
-        // --- RAIN SYSTEM ---
-        const RainSys = {
-            canvas: document.getElementById('rain-canvas'),
-            init: function() {
-                const ctx = this.canvas.getContext('2d');
-                let w, h;
-                const drops = [];
-                
-                const resize = () => {
-                    w = this.canvas.width = window.innerWidth;
-                    h = this.canvas.height = window.innerHeight;
-                    drops.length = 0;
-                    for(let i=0; i<120; i++) drops.push({
-                        x: Math.random()*w, y: Math.random()*h,
-                        l: Math.random()*15+5, s: Math.random()*10+5
-                    });
-                };
-                window.addEventListener('resize', resize);
-                resize();
-
-                function loop() {
-                    ctx.clearRect(0,0,w,h);
-                    ctx.fillStyle = 'rgba(255,255,255,0.15)'; // Subtle rain
-                    drops.forEach(d => {
-                        d.y += d.s;
-                        if(d.y > h) { d.y = -20; d.x = Math.random()*w; }
-                        ctx.fillRect(d.x, d.y, 1, d.l);
-                    });
-                    requestAnimationFrame(loop);
-                }
-                loop();
+                osc.stop(this.ctx.currentTime + duration);
             }
-        };
 
-        // --- HYPER-STYLIZED LOGO SYSTEM ---
-        const LogoSys = {
-            c: document.getElementById('logo-canvas'),
-            ctx: null,
-            w: 0, h: 0,
-            particles: [],
-            targetText: "MEXTRACT",
-            state: "IDLE", // IDLE or MORPH
-            
-            init: function() {
-                this.ctx = this.c.getContext('2d');
-                this.resize();
-                
-                // Events for Interaction
-                this.c.addEventListener('mouseenter', () => { 
-                    this.morphTo("MAXFLUX"); 
-                    AudioSys.click(); 
-                });
-                this.c.addEventListener('mouseleave', () => { 
-                    this.morphTo("MEXTRACT"); 
-                });
-                
-                window.addEventListener('resize', () => this.resize());
-                this.animate();
-            },
-            
-            resize: function() {
-                this.w = this.c.width = this.c.parentElement.offsetWidth;
-                this.h = this.c.height = this.c.parentElement.offsetHeight;
-                this.morphTo(this.targetText, true); // Reset
-            },
-
-            // Scan text to get particle coordinates
-            scan: function(text) {
-                const tmp = document.createElement('canvas');
-                tmp.width = this.w; tmp.height = this.h;
-                const tctx = tmp.getContext('2d');
-                tctx.font = '900 28px "Orbitron"';
-                tctx.fillStyle = '#fff';
-                tctx.textAlign = 'left';
-                tctx.textBaseline = 'middle';
-                tctx.fillText(text, 10, this.h/2);
-                
-                const data = tctx.getImageData(0,0,this.w,this.h).data;
-                const points = [];
-                // Scan density
-                for(let y=0; y<this.h; y+=3) {
-                    for(let x=0; x<this.w; x+=3) {
-                        if(data[(y*this.w+x)*4+3] > 128) points.push({x,y});
-                    }
-                }
-                return points;
-            },
-
-            morphTo: function(text, force=false) {
-                this.targetText = text;
-                const targets = this.scan(text);
-                
-                // Manage particle pool
-                if(this.particles.length < targets.length) {
-                    const diff = targets.length - this.particles.length;
-                    for(let i=0; i<diff; i++) this.particles.push({
-                        x: Math.random()*this.w, y: Math.random()*this.h,
-                        tx: 0, ty: 0, vx: 0, vy: 0,
-                        color: '#fff' // Base color
-                    });
-                }
-                
-                // Assign targets
-                this.particles.forEach((p, i) => {
-                    if(targets[i]) {
-                        p.tx = targets[i].x;
-                        p.ty = targets[i].y;
-                        p.active = true;
-                        // Glitch effect on trigger
-                        if(!force) {
-                            p.vx = (Math.random()-0.5) * 40; // EXPLODE
-                            p.vy = (Math.random()-0.5) * 40;
-                            p.color = Math.random() > 0.8 ? '#0ff' : (Math.random() > 0.5 ? '#f0f' : '#fff'); // Cyber colors
-                        }
-                    } else {
-                        p.active = false;
-                    }
-                });
-            },
-
-            animate: function() {
-                this.ctx.clearRect(0,0,this.w,this.h);
-                
-                this.particles.forEach(p => {
-                    if(!p.active) return;
-                    
-                    const dx = p.tx - p.x;
-                    const dy = p.ty - p.y;
-                    
-                    // Spring Physics
-                    p.vx += dx * 0.08;
-                    p.vy += dy * 0.08;
-                    p.vx *= 0.80; // Dampening
-                    p.vy *= 0.80;
-                    
-                    p.x += p.vx;
-                    p.y += p.vy;
-
-                    // Draw Glitch Rectangles
-                    this.ctx.fillStyle = p.color;
-                    
-                    // Random flicker
-                    if(Math.abs(p.vx) > 1 && Math.random() > 0.8) {
-                         this.ctx.fillStyle = Math.random() > 0.5 ? '#0ff' : '#f0f';
-                         this.ctx.fillRect(p.x - 5, p.y, 10, 2); // Glitch line
-                    } else {
-                        this.ctx.fillRect(p.x, p.y, 2, 2); // Standard pixel
-                    }
-                    
-                    // Return to white when settled
-                    if(Math.abs(p.vx) < 0.5 && Math.abs(p.vy) < 0.5) p.color = '#fff';
-                });
-                
-                requestAnimationFrame(() => this.animate());
+            hover() { this.playTone(800, 'sine', 0.05); }
+            click() { this.playTone(220, 'square', 0.1); this.playTone(150, 'sawtooth', 0.1); }
+            error() { this.playTone(100, 'sawtooth', 0.3); this.playTone(80, 'square', 0.3); }
+            process() { 
+                // Random glitch sound
+                this.playTone(1000 + Math.random()*2000, 'sawtooth', 0.05); 
             }
+            boot() {
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.exponentialRampToValueAtTime(2000, now + 2);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.5, now + 1);
+                gain.gain.linearRampToValueAtTime(0, now + 2);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start();
+                osc.stop(now + 2);
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // --- UTILITIES ---
+        const $ = (id) => document.getElementById(id);
+        const log = (msg, type="info") => {
+            const consoleDiv = $('console-output');
+            const p = document.createElement('p');
+            p.textContent = `> ${msg.toUpperCase()}`;
+            if(type === 'error') p.style.color = '#ff5555';
+            if(type === 'success') p.style.color = '#55ff55';
+            consoleDiv.appendChild(p);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
         };
 
-        // --- APP LOGIC ---
+        // --- STATE ---
+        let videoFile = null;
+        let startMarker = 0;
+        let endMarker = 0;
+        const FRAME_STEP = 0.04; // Approx 25fps step for manual seeking
+        let isProcessing = false;
+
+        // --- ELEMENTS ---
+        const loader = $('loader');
+        const video = $('main-video');
+        const fileInput = $('file-input');
+        const canvas = $('proc-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Controls
+        const btnPlay = $('btn-play');
+        const btnPause = $('btn-pause');
+        const btnPrev = $('btn-prev');
+        const btnNext = $('btn-next');
+        const slider = $('seek-slider');
+        
+        // Markers
+        const btnSetStart = $('btn-set-start');
+        const btnSetEnd = $('btn-set-end');
+        const displayStart = $('start-time-display');
+        const displayEnd = $('end-time-display');
+
+        // Extract
+        const btnSnap = $('btn-snap');
+        const btnRange = $('btn-range');
+        const btnFull = $('btn-full');
+
+        // --- INITIALIZATION ---
         window.addEventListener('load', () => {
-            // 1. Start Systems
-            RainSys.init();
-            LogoSys.init();
-            
-            // 2. Auto Boot (1.5 Seconds)
-            const loader = document.getElementById('loader');
-            const app = document.getElementById('app-interface');
-            
+            sfx.boot();
             setTimeout(() => {
                 loader.style.opacity = '0';
-                loader.style.visibility = 'hidden';
-                app.classList.add('active');
-                AudioSys.init(); // Try to init audio if allowed by browser policy on load
-            }, 1500);
+                setTimeout(() => loader.style.display = 'none', 500);
+                log("System Ready.");
+            }, 2000);
 
-            // 3. Clock
+            // Clock Update
             setInterval(() => {
-                document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-GB');
+                const now = new Date();
+                $('clock').textContent = now.toLocaleTimeString('en-GB');
             }, 1000);
-
-            // 4. Interaction Listener (For Audio Policy)
-            document.addEventListener('click', () => AudioSys.init(), {once:true});
-
-            // 5. Video Logic
-            const uploadTrig = document.getElementById('upload-trigger');
-            const fileIn = document.getElementById('file-input');
-            const videoWrap = document.getElementById('video-wrapper');
-            const vid = document.getElementById('main-video');
-            const seekBar = document.getElementById('seek-bar');
-            const btnPlay = document.getElementById('btn-play');
-            
-            uploadTrig.addEventListener('click', () => fileIn.click());
-            fileIn.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if(!file) return;
-                const url = URL.createObjectURL(file);
-                vid.src = url;
-                vid.onloadedmetadata = () => {
-                    uploadTrig.style.display = 'none';
-                    videoWrap.style.display = 'flex';
-                    seekBar.max = vid.duration;
-                    document.getElementById('t-dur').innerText = vid.duration.toFixed(2) + "s";
-                    AudioSys.success();
-                };
-            });
-
-            // Seeking
-            seekBar.addEventListener('input', (e) => { vid.currentTime = e.target.value; updateUI(); });
-            seekBar.addEventListener('mousedown', () => vid.pause());
-            
-            vid.addEventListener('timeupdate', updateUI);
-            
-            function updateUI() {
-                const p = (vid.currentTime / vid.duration) * 100;
-                document.getElementById('scrub-fill').style.width = p + '%';
-                document.getElementById('scrub-head').style.left = p + '%';
-                document.getElementById('t-curr').innerText = vid.currentTime.toFixed(2) + "s";
-                if(document.activeElement !== seekBar) seekBar.value = vid.currentTime;
-            }
-
-            // Play Control
-            btnPlay.addEventListener('click', () => {
-                if(vid.paused) { vid.play(); btnPlay.innerText = "PAUSE"; }
-                else { vid.pause(); btnPlay.innerText = "PLAY"; }
-                AudioSys.click();
-            });
-
-            // Frames
-            const F = 0.04;
-            document.getElementById('btn-back').addEventListener('click', () => { vid.currentTime -= F; vid.pause(); AudioSys.click(); });
-            document.getElementById('btn-fwd').addEventListener('click', () => { vid.currentTime += F; vid.pause(); AudioSys.click(); });
-
-            // Extraction
-            function extract(type) {
-                if(vid.readyState < 2) return;
-                const cvs = document.getElementById('proc-canvas');
-                cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
-                const ctx = cvs.getContext('2d');
-                ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
-                
-                try {
-                    const fmt = type === 'png' ? 'image/png' : 'image/jpeg';
-                    const ext = type === 'png' ? '.png' : '.jpg';
-                    const q = type === 'png' ? 1.0 : 0.85;
-                    const data = cvs.toDataURL(fmt, q);
-                    const a = document.createElement('a');
-                    a.href = data;
-                    a.download = `MEXTRACT_${Date.now()}${ext}`;
-                    a.click();
-                    AudioSys.success();
-                } catch(e) {
-                    alert("Error: Security Restriction (CORS).");
-                }
-            }
-
-            document.getElementById('btn-png').addEventListener('click', () => extract('png'));
-            document.getElementById('btn-jpg').addEventListener('click', () => extract('jpg'));
         });
+
+        // --- EVENT LISTENERS ---
+
+        // Button FX
+        document.querySelectorAll('button').forEach(b => {
+            b.addEventListener('mouseenter', () => !b.disabled && sfx.hover());
+            b.addEventListener('click', () => !b.disabled && sfx.click());
+        });
+
+        // File Upload
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const url = URL.createObjectURL(file);
+            video.src = url;
+            videoFile = file;
+            
+            $('drop-zone').querySelector('.text-center').style.display = 'none';
+            video.classList.remove('hidden');
+            
+            log(`Loaded: ${file.name}`, "success");
+            
+            video.onloadedmetadata = () => {
+                slider.max = video.duration;
+                endMarker = video.duration;
+                updateTimeDisplay();
+                updateMarkersUI();
+                enableControls();
+                log(`Duration: ${video.duration.toFixed(2)}s`);
+                log(`Resolution: ${video.videoWidth}x${video.videoHeight}`);
+            };
+        });
+
+        // Video Controls
+        btnPlay.addEventListener('click', () => { video.play(); togglePlayBtn(true); });
+        btnPause.addEventListener('click', () => { video.pause(); togglePlayBtn(false); });
+        
+        video.addEventListener('timeupdate', () => {
+            slider.value = video.currentTime;
+            updateTimeDisplay();
+        });
+        
+        video.addEventListener('ended', () => togglePlayBtn(false));
+
+        slider.addEventListener('input', () => {
+            video.currentTime = slider.value;
+            updateTimeDisplay();
+        });
+
+        // Frame stepping
+        btnPrev.addEventListener('click', () => {
+            video.pause(); togglePlayBtn(false);
+            video.currentTime = Math.max(0, video.currentTime - FRAME_STEP);
+        });
+
+        btnNext.addEventListener('click', () => {
+            video.pause(); togglePlayBtn(false);
+            video.currentTime = Math.min(video.duration, video.currentTime + FRAME_STEP);
+        });
+
+        // Markers
+        btnSetStart.addEventListener('click', () => {
+            startMarker = video.currentTime;
+            if(startMarker > endMarker) endMarker = video.duration;
+            updateMarkersUI();
+            log(`Start point set: ${startMarker.toFixed(2)}s`);
+        });
+
+        btnSetEnd.addEventListener('click', () => {
+            endMarker = video.currentTime;
+            if(endMarker < startMarker) startMarker = 0;
+            updateMarkersUI();
+            log(`End point set: ${endMarker.toFixed(2)}s`);
+        });
+
+        // --- EXTRACTION LOGIC ---
+
+        // 1. Single Frame
+        btnSnap.addEventListener('click', () => {
+            drawFrame();
+            canvas.toBlob((blob) => {
+                saveAs(blob, `frame_${video.currentTime.toFixed(2)}.jpg`);
+                log("Single frame extracted.", "success");
+            }, 'image/jpeg', 1.0);
+        });
+
+        // 2. Range Extraction
+        btnRange.addEventListener('click', () => {
+            startExtraction(startMarker, endMarker);
+        });
+
+        // 3. Full Extraction
+        btnFull.addEventListener('click', () => {
+            startExtraction(0, video.duration);
+        });
+
+
+        // Helper Functions
+        function togglePlayBtn(isPlaying) {
+            if(isPlaying) {
+                btnPlay.classList.add('hidden');
+                btnPause.classList.remove('hidden');
+            } else {
+                btnPlay.classList.remove('hidden');
+                btnPause.classList.add('hidden');
+            }
+        }
+
+        function updateTimeDisplay() {
+            $('current-time').textContent = formatTime(video.currentTime);
+            $('total-time').textContent = formatTime(video.duration);
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 100);
+            return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+
+        function updateMarkersUI() {
+            displayStart.textContent = startMarker.toFixed(2) + 's';
+            displayEnd.textContent = endMarker.toFixed(2) + 's';
+        }
+
+        function enableControls() {
+            [btnPlay, btnPrev, btnNext, slider, btnSetStart, btnSetEnd, btnSnap, btnRange, btnFull].forEach(el => {
+                el.disabled = false;
+            });
+        }
+
+        function drawFrame() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
+
+        // --- CORE EXTRACTION ENGINE ---
+        async function startExtraction(start, end) {
+            if(isProcessing) return;
+            isProcessing = true;
+            disableInterface();
+            
+            log(`INITIATING BATCH PROCESS...`, "info");
+            log(`RANGE: ${start.toFixed(2)}s - ${end.toFixed(2)}s`);
+
+            const zip = new JSZip();
+            const folder = zip.folder("mextract_frames");
+            
+            let currentTime = start;
+            let frameCount = 1;
+            const totalDuration = end - start;
+            
+            video.pause();
+            togglePlayBtn(false);
+
+            // Seek Loop
+            while (currentTime <= end) {
+                // Update UI less frequently to save resources
+                if(frameCount % 5 === 0) {
+                    log(`PROCESSING FRAME ${frameCount}...`);
+                    sfx.process(); // Play glitch sound
+                    $('console-output').scrollTop = $('console-output').scrollHeight;
+                }
+
+                // Seek
+                video.currentTime = currentTime;
+                
+                // Wait for seek
+                await new Promise(resolve => {
+                    const onSeek = () => {
+                        video.removeEventListener('seeked', onSeek);
+                        resolve();
+                    };
+                    video.addEventListener('seeked', onSeek);
+                });
+
+                // Draw
+                drawFrame();
+                
+                // Convert to Blob Promise
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 1.0));
+                const filename = `${frameCount}.jpg`;
+                
+                folder.file(filename, blob);
+
+                // Increment
+                currentTime += 0.04; // ~25fps capture rate. Increase 0.04 to 0.1 for fewer frames.
+                frameCount++;
+
+                // Safety break for huge videos to prevent browser crash (limit 1000 frames for safety in this demo)
+                if(frameCount > 3000) {
+                    log("SAFETY LIMIT REACHED (3000 FRAMES). STOPPING.", "error");
+                    break;
+                }
+                
+                // Small delay to let UI breathe
+                await new Promise(r => setTimeout(r, 10));
+            }
+
+            log("COMPRESSING DATA...", "info");
+            
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                saveAs(content, "mextract_batch.zip");
+                log("DOWNLOAD INITIATED.", "success");
+                sfx.boot(); // Success sound
+                isProcessing = false;
+                enableControls();
+            });
+        }
+
+        function disableInterface() {
+            [btnPlay, btnPrev, btnNext, slider, btnSetStart, btnSetEnd, btnSnap, btnRange, btnFull, fileInput].forEach(el => {
+                el.disabled = true;
+            });
+        }
+
     </script>
 </body>
 </html>
